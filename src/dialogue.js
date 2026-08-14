@@ -210,6 +210,15 @@ class DialogueManager {
     this.isTyping = false;
     this.onCompleteCallback = null;
 
+    this.avatarMap = {
+      banderita: 'assets/sprites/avatar_banderita.png',
+      mlzlz: 'assets/sprites/avatar_mlzlz.png',
+      ocmz: 'assets/sprites/avatar_ocmz.png',
+      abuAbed: 'assets/sprites/avatar_3gaming.png',
+      '3gaming': 'assets/sprites/avatar_3gaming.png',
+      opiilz: 'assets/sprites/avatar_opiilz.png'
+    };
+
     this.setupListeners();
   }
 
@@ -221,7 +230,6 @@ class DialogueManager {
       this.btnSkip.addEventListener('click', () => this.skipAll());
     }
 
-    // Keyboard trigger (Space / Enter)
     window.addEventListener('keydown', (e) => {
       if (window.game && window.game.state === 'dialogue') {
         if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyJ') {
@@ -259,15 +267,23 @@ class DialogueManager {
     this.fullCurrentText = item.text;
     this.isTyping = true;
 
-    // Update Avatar & Speaker Name
+    // Update Avatar Frame with transparent custom portrait if available
     if (this.avatarEl) {
       this.avatarEl.className = `dialogue-avatar avatar-${item.speaker}`;
+      const avatarPath = this.avatarMap[item.speaker];
+      if (avatarPath) {
+        this.avatarEl.style.backgroundImage = `url(${avatarPath})`;
+        this.avatarEl.style.backgroundSize = 'cover';
+        this.avatarEl.style.backgroundPosition = 'center';
+      } else {
+        this.avatarEl.style.backgroundImage = 'none';
+      }
     }
+
     if (this.nameEl) {
       this.nameEl.textContent = item.name;
     }
 
-    // Start Typewriter
     if (this.textEl) this.textEl.textContent = '';
     let charIndex = 0;
 
@@ -290,13 +306,11 @@ class DialogueManager {
 
   advance() {
     if (this.isTyping) {
-      // Complete current line immediately
       if (this.typewriterTimer) clearInterval(this.typewriterTimer);
       this.typewriterTimer = null;
       if (this.textEl) this.textEl.textContent = this.fullCurrentText;
       this.isTyping = false;
     } else {
-      // Next line
       this.currentIndex++;
       this.showCurrentLine();
     }

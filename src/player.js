@@ -14,7 +14,7 @@ const HERO_DATA = {
     secondaryColor: '#f5b041',
     avatarBorder: '#e74c3c',
     maxHp: 160,
-    speed: 6.5, // Flash Speed
+    speed: 6.5,
     jumpPower: -11.8,
     attackPower: 38,
     defense: 25,
@@ -45,7 +45,7 @@ const HERO_DATA = {
     attackRange: 75,
     attackDuration: 18,
     critRate: 0.35,
-    hasTacticalCalm: true, // Immune to horror traps & jumpscares
+    hasTacticalCalm: true,
     selectedWeapon: 'hotTea',
     specialName: 'فلاش الرعب وعاصفة الشاي (Horror Flash)',
     specialDesc: 'تجميد الأعداء برذاذ الشاي واستدعاء أشباح شاي تطاردهم',
@@ -68,7 +68,7 @@ const HERO_DATA = {
     defense: 12,
     attackRange: 180,
     attackDuration: 14,
-    maxJumps: 3, // Anime Triple Jump
+    maxJumps: 3,
     hasAnimeJump: true,
     selectedWeapon: 'strawHat',
     specialName: 'بناء الماينكرافت المطور (Block Barrage)',
@@ -89,7 +89,7 @@ const HERO_DATA = {
     speed: 4.2,
     jumpPower: -11.2,
     attackPower: 34,
-    defense: 50, // 50% Super Armor
+    defense: 50,
     attackRange: 140,
     attackDuration: 20,
     hasSuperArmor: true,
@@ -115,7 +115,7 @@ const HERO_DATA = {
     defense: 15,
     attackRange: 60,
     attackDuration: 14,
-    hasSecurityEngineer: true, // Disarms laser traps & mines
+    hasSecurityEngineer: true,
     selectedWeapon: 'masterScrewdriver',
     specialName: 'لوح النيون النفاث (Hoverboard Strike)',
     specialDesc: 'اندفاع نفاث بلوح النيون مع درب ناري بنفسجي مدمر',
@@ -130,8 +130,8 @@ class Player {
     this.y = 300;
     this.vx = 0;
     this.vy = 0;
-    this.width = 34;
-    this.height = 50;
+    this.width = 38;
+    this.height = 54;
     this.facing = 1;
     this.isGrounded = false;
     this.jumpsLeft = 1;
@@ -150,12 +150,12 @@ class Player {
 
     // Boomerangs & Projectiles
     this.projectiles = [];
-    this.boomerangs = []; // oCMz straw hat
-    this.turrets = []; // Abu Abed turrets
-    this.activeGhosts = []; // MLZLZ ghosts
-    this.fallingBlocks = []; // oCMz blocks
-    this.teaParticles = []; // MLZLZ tea spray
-    this.baldBeamActive = false; // Abu Abed solar beam
+    this.boomerangs = [];
+    this.turrets = [];
+    this.activeGhosts = [];
+    this.fallingBlocks = [];
+    this.teaParticles = [];
+    this.baldBeamActive = false;
     this.baldBeamAngle = 0;
   }
 
@@ -200,11 +200,8 @@ class Player {
     this.jumpsLeft = this.maxJumps;
   }
 
-  // --------------------------------------------------------------------------
-  // Movement, Dash & Jumping
-  // --------------------------------------------------------------------------
   move(dir) {
-    if (this.dashTimer > 0) return; // Locked in dash
+    if (this.dashTimer > 0) return;
     if (this.isSpecialActive && this.heroId === 'opiilz') return;
 
     this.vx = dir * this.speed;
@@ -244,21 +241,16 @@ class Player {
     window.particles.burst(this.x + this.width / 2, this.y + this.height / 2, 15, ['#fffa65', '#ff3838', '#ffffff'], 3, 7);
   }
 
-  // --------------------------------------------------------------------------
-  // Weapon Attacks
-  // --------------------------------------------------------------------------
   attack() {
     if (this.isAttacking || this.isSpecialActive) return;
     this.isAttacking = true;
     this.attackTimer = this.heroData.attackDuration;
 
-    // 1. BANDERITAX: TAMEES vs HOT POTATO
     if (this.heroId === 'banderita') {
       if (this.selectedWeapon === 'tamees') {
         window.audio.sfxTameesSlash();
         window.particles.burst(this.x + (this.facing > 0 ? this.width + 10 : -10), this.y + 20, 10, ['#f39c12', '#e74c3c'], 2, 5);
       } else {
-        // Hot Potato explosive projectile
         window.audio.sfxHotPotato();
         this.projectiles.push({
           x: this.facing > 0 ? this.x + this.width : this.x - 14,
@@ -272,8 +264,6 @@ class Player {
           type: 'potato'
         });
       }
-
-    // 2. MLZLZ: HOT TEA SPRAY
     } else if (this.heroId === 'mlzlz') {
       window.audio.sfxTeaSpray();
       for (let i = 0; i < 5; i++) {
@@ -288,8 +278,6 @@ class Player {
           size: 6
         });
       }
-
-    // 3. OCMZ: STRAW HAT BOOMERANG
     } else if (this.heroId === 'ocmz') {
       window.audio.sfxHatBoomerang();
       this.boomerangs.push({
@@ -305,23 +293,16 @@ class Player {
         rotation: 0,
         life: 70
       });
-
-    // 4. ABU ABED: GOLDEN BALD 360° SOLAR BEAM
     } else if (this.heroId === 'abuAbed') {
       window.audio.sfxBaldBeam();
       this.baldBeamActive = true;
       this.baldBeamTimer = 20;
-
-    // 5. OPIILZ: MASTER SCREWDRIVER ELECTRIC STAB
     } else if (this.heroId === 'opiilz') {
       window.audio.sfxScrewdriverZap();
       window.particles.burst(this.x + (this.facing > 0 ? this.width + 12 : -12), this.y + 18, 8, ['#9b59b6', '#00d2d3', '#ffffff'], 2, 5);
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Signature Ultimates
-  // --------------------------------------------------------------------------
   triggerSpecial() {
     if (this.energy < this.maxEnergy || this.isSpecialActive) return false;
 
@@ -397,7 +378,7 @@ class Player {
     if (this.invulnerableTimer > 0) return 0;
 
     let defRatio = this.defense / 100;
-    if (this.heroData.hasSuperArmor) defRatio = 0.5; // Abu Abed 50% Super Armor
+    if (this.heroData.hasSuperArmor) defRatio = 0.5;
 
     const actualDamage = Math.max(5, Math.round(amount * (1 - defRatio)));
     this.hp -= actualDamage;
@@ -431,11 +412,7 @@ class Player {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Update Cycle
-  // --------------------------------------------------------------------------
   update(platforms, enemies, boss, interactiveObjects) {
-    // Gravity & Air Resistance
     if (!this.isGrounded) {
       const gravity = (this.heroData.hasAnimeJump && this.vy > 0) ? 0.35 : 0.55;
       this.vy += gravity;
@@ -474,7 +451,6 @@ class Player {
 
     if (this.invulnerableTimer > 0) this.invulnerableTimer--;
 
-    // Solar Beam timer (Abu Abed)
     if (this.baldBeamActive) {
       this.baldBeamTimer--;
       this.baldBeamAngle += 0.2;
@@ -492,10 +468,6 @@ class Player {
     else if (!this.isGrounded) this.state = this.vy < 0 ? 'jump' : 'fall';
     else if (Math.abs(this.vx) > 0.5) this.state = 'run';
     else this.state = 'idle';
-
-    // ------------------------------------------------------------------------
-    // Projectiles & Boomerang Physics
-    // ------------------------------------------------------------------------
 
     // 1. Hot Potato Projectiles
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
@@ -532,19 +504,18 @@ class Player {
       }
     }
 
-    // 2. MLZLZ Tea Spray Particles
+    // 2. MLZLZ Tea Spray
     for (let i = this.teaParticles.length - 1; i >= 0; i--) {
       const tea = this.teaParticles[i];
       tea.x += tea.vx;
       tea.y += tea.vy;
       tea.life--;
 
-      // Check hit enemies
       if (enemies) {
         for (const enemy of enemies) {
           if (!enemy.isDead && Math.hypot(tea.x - (enemy.x + enemy.width / 2), tea.y - (enemy.y + enemy.height / 2)) < (tea.size + enemy.width / 2)) {
             enemy.takeDamage(tea.damage, Math.sign(tea.vx));
-            enemy.frozenTimer = 30; // Tea stun
+            enemy.frozenTimer = 30;
             this.addEnergy(4);
           }
         }
@@ -556,7 +527,6 @@ class Player {
         }
       }
 
-      // Check interactive objects (Tea Lanterns, Secret Walls)
       if (interactiveObjects) {
         for (const obj of interactiveObjects) {
           if (!obj.activated && Math.hypot(tea.x - obj.x, tea.y - obj.y) < 40) {
@@ -583,14 +553,12 @@ class Player {
         hat.distanceTraveled += Math.abs(hat.vx);
         if (hat.distanceTraveled >= hat.maxDist) hat.returning = true;
       } else {
-        // Return to player
         const angle = Math.atan2((this.y + 18) - hat.y, (this.x + this.width / 2) - hat.x);
         hat.vx = Math.cos(angle) * 14;
         hat.vy = Math.sin(angle) * 14;
         hat.x += hat.vx;
         hat.y += hat.vy;
 
-        // Caught by player
         if (Math.hypot(hat.x - (this.x + this.width / 2), hat.y - (this.y + 18)) < 24) {
           window.particles.burst(hat.x, hat.y, 6, ['#ffd700', '#f1c40f'], 1, 3);
           this.boomerangs.splice(i, 1);
@@ -598,7 +566,6 @@ class Player {
         }
       }
 
-      // Damage enemies along the path (piercing)
       if (enemies) {
         for (const enemy of enemies) {
           if (!enemy.isDead && Math.hypot(hat.x - (enemy.x + enemy.width / 2), hat.y - (enemy.y + enemy.height / 2)) < (16 + enemy.width / 2)) {
@@ -617,7 +584,7 @@ class Player {
       if (hat.life <= 0) this.boomerangs.splice(i, 1);
     }
 
-    // 4. Abu Abed Solar Light Beam checking mirrors & enemies
+    // 4. Abu Abed Solar Light Beam
     if (this.baldBeamActive) {
       if (enemies) {
         for (const enemy of enemies) {
@@ -642,7 +609,7 @@ class Player {
       }
     }
 
-    // 5. Turrets & Ghosts
+    // 5. Turrets
     for (let i = this.turrets.length - 1; i >= 0; i--) {
       const turret = this.turrets[i];
       turret.duration--;
@@ -678,9 +645,6 @@ class Player {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Collision
-  // --------------------------------------------------------------------------
   checkPlatformCollisionHorizontal(platforms) {
     for (const p of platforms) {
       if (p.isOneWay) continue;
@@ -739,13 +703,13 @@ class Player {
   }
 
   // --------------------------------------------------------------------------
-  // Pixel Art Drawing
+  // Dynamic Sprite Sheet & Procedural Renderer
   // --------------------------------------------------------------------------
   draw(ctx, cameraX = 0, cameraY = 0) {
     const px = Math.round(this.x - cameraX);
     const py = Math.round(this.y - cameraY);
 
-    // Draw active boomerangs (oCMz Straw Hat)
+    // Boomerangs
     for (const hat of this.boomerangs) {
       const hx = Math.round(hat.x - cameraX);
       const hy = Math.round(hat.y - cameraY);
@@ -756,12 +720,12 @@ class Player {
       ctx.beginPath();
       ctx.ellipse(0, 0, 16, 7, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#e74c3c'; // Red ribbon
+      ctx.fillStyle = '#e74c3c';
       ctx.fillRect(-8, -3, 16, 3);
       ctx.restore();
     }
 
-    // Draw Tea Spray (MLZLZ)
+    // Tea Spray
     for (const tea of this.teaParticles) {
       const tx = Math.round(tea.x - cameraX);
       const ty = Math.round(tea.y - cameraY);
@@ -773,7 +737,7 @@ class Player {
       ctx.restore();
     }
 
-    // Draw Solar Light Beam (Abu Abed)
+    // Solar Light Beam
     if (this.baldBeamActive) {
       ctx.save();
       const beamGrad = ctx.createRadialGradient(px + this.width / 2, py - 10, 5, px + this.width / 2, py - 10, 140);
@@ -787,7 +751,7 @@ class Player {
       ctx.restore();
     }
 
-    // Draw projectiles
+    // Projectiles
     for (const proj of this.projectiles) {
       const prx = Math.round(proj.x - cameraX);
       const pry = Math.round(proj.y - cameraY);
@@ -799,25 +763,69 @@ class Player {
       ctx.restore();
     }
 
-    // Invulnerability blink
     if (this.invulnerableTimer > 0 && Math.floor(this.invulnerableTimer / 4) % 2 === 0) return;
 
     ctx.save();
     ctx.translate(px + this.width / 2, py + this.height / 2);
     ctx.scale(this.facing, 1);
 
-    const bob = (this.state === 'run') ? Math.sin(this.animFrame * Math.PI / 2) * 3 : 0;
-    const legOffset = (this.state === 'run') ? (this.animFrame % 2 === 0 ? 4 : -4) : 0;
+    // Check if custom transparent sprite images are available from assets
+    const heroKey = this.heroId;
+    const walkImg = window.assets ? window.assets.getImage(`${heroKey}_walk`) : null;
+    const idleImg = window.assets ? window.assets.getImage(`${heroKey}_idle`) : null;
+    const attackImg = window.assets ? window.assets.getImage(`${heroKey}_attack`) : null;
 
-    switch (this.heroId) {
-      case 'banderita': this.drawBanderita(ctx, bob, legOffset); break;
-      case 'mlzlz': this.drawMLZLZ(ctx, bob, legOffset); break;
-      case 'ocmz': this.drawOCMz(ctx, bob, legOffset); break;
-      case 'abuAbed': this.drawAbuAbed(ctx, bob, legOffset); break;
-      case 'opiilz': this.drawOPiiLz(ctx, bob, legOffset); break;
+    let spriteRendered = false;
+
+    if (this.state === 'attack' && attackImg && attackImg.complete) {
+      // 4-frame attack strip
+      const progress = 1 - (this.attackTimer / this.heroData.attackDuration);
+      const fIdx = Math.min(3, Math.floor(progress * 4));
+      const fw = attackImg.width / 4;
+      const fh = attackImg.height;
+      const dw = this.width * 1.5;
+      const dh = this.height * 1.25;
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(attackImg, fIdx * fw, 0, fw, fh, -dw / 2, -dh / 2, dw, dh);
+      spriteRendered = true;
+
+    } else if (this.state === 'run' && walkImg && walkImg.complete) {
+      // 4-frame walk strip
+      const fIdx = this.animFrame % 4;
+      const fw = walkImg.width / 4;
+      const fh = walkImg.height;
+      const dw = this.width * 1.45;
+      const dh = this.height * 1.2;
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(walkImg, fIdx * fw, 0, fw, fh, -dw / 2, -dh / 2, dw, dh);
+      spriteRendered = true;
+
+    } else if (idleImg && idleImg.complete) {
+      // Idle standing sprite
+      const dw = this.width * 1.4;
+      const dh = this.height * 1.2;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(idleImg, 0, 0, idleImg.width, idleImg.height, -dw / 2, -dh / 2, dw, dh);
+      spriteRendered = true;
     }
 
-    if (this.isAttacking) this.drawWeaponSlash(ctx);
+    // Procedural Fallback if sprite not loaded
+    if (!spriteRendered) {
+      const bob = (this.state === 'run') ? Math.sin(this.animFrame * Math.PI / 2) * 3 : 0;
+      const legOffset = (this.state === 'run') ? (this.animFrame % 2 === 0 ? 4 : -4) : 0;
+
+      switch (this.heroId) {
+        case 'banderita': this.drawBanderita(ctx, bob, legOffset); break;
+        case 'mlzlz': this.drawMLZLZ(ctx, bob, legOffset); break;
+        case 'ocmz': this.drawOCMz(ctx, bob, legOffset); break;
+        case 'abuAbed': this.drawAbuAbed(ctx, bob, legOffset); break;
+        case 'opiilz': this.drawOPiiLz(ctx, bob, legOffset); break;
+      }
+    }
+
+    if (this.isAttacking && !spriteRendered) this.drawWeaponSlash(ctx);
 
     ctx.restore();
   }
@@ -839,9 +847,8 @@ class Player {
     ctx.fillStyle = '#e74c3c';
     ctx.fillRect(-12, -26 + bob, 24, 5);
 
-    // Weapon in hand (Tamees bread or Potato)
     if (this.selectedWeapon === 'tamees') {
-      ctx.fillStyle = '#f5cd79'; // Tamees bread
+      ctx.fillStyle = '#f5cd79';
       ctx.beginPath();
       ctx.ellipse(14, 0 + bob, 12, 6, 0.3, 0, Math.PI * 2);
       ctx.fill();
@@ -861,14 +868,13 @@ class Player {
     ctx.fillRect(-12, -8 + bob, 24, 22);
     ctx.fillStyle = '#ffeaa7';
     ctx.fillRect(-9, -24 + bob, 18, 16);
-    ctx.fillStyle = '#00d2d3'; // Headset
+    ctx.fillStyle = '#00d2d3';
     ctx.fillRect(-11, -26 + bob, 4, 10);
     ctx.fillRect(-9, -29 + bob, 18, 3);
 
-    // Hot Cup of Tea in hand
-    ctx.fillStyle = '#ffffff'; // Cup
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(10, -2 + bob, 10, 10);
-    ctx.fillStyle = '#e67e22'; // Tea inside
+    ctx.fillStyle = '#e67e22';
     ctx.fillRect(12, -4 + bob, 6, 2);
   }
 
@@ -881,7 +887,6 @@ class Player {
     ctx.fillStyle = '#fed330';
     ctx.fillRect(-8, -24 + bob, 16, 16);
 
-    // Straw Hat on head (or held if thrown)
     if (this.boomerangs.length === 0) {
       ctx.fillStyle = '#f1c40f';
       ctx.fillRect(-12, -30 + bob, 24, 5);
@@ -898,12 +903,10 @@ class Player {
     ctx.fillRect(-12, -8 + bob, 24, 20);
     ctx.fillStyle = '#ffbe76';
     ctx.fillRect(-9, -24 + bob, 18, 16);
-    ctx.fillStyle = '#30336b'; // Beard
+    ctx.fillStyle = '#30336b';
     ctx.fillRect(-9, -12 + bob, 18, 5);
 
-    // Shiny Golden Bald Head!
-    ctx.fillStyle = '#badc58';
-    ctx.fillStyle = '#ffd700'; // Golden glow
+    ctx.fillStyle = '#ffd700';
     ctx.beginPath();
     ctx.arc(0, -24 + bob, 10, Math.PI, 0);
     ctx.fill();
@@ -917,10 +920,9 @@ class Player {
     ctx.fillStyle = '#ffeaa7';
     ctx.fillRect(-8, -24 + bob, 16, 16);
 
-    // Master Screwdriver in Hand
     ctx.fillStyle = '#badc58';
     ctx.fillRect(10, 0 + bob, 14, 4);
-    ctx.fillStyle = '#e74c3c'; // Screwdriver handle
+    ctx.fillStyle = '#e74c3c';
     ctx.fillRect(6, -1 + bob, 6, 6);
   }
 

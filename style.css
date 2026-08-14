@@ -156,19 +156,22 @@ html, body {
 }
 
 .hud-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   border: 3px solid var(--accent-gold);
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
 }
 
-.avatar-banderita { background-color: #ff3838; }
-.avatar-mlzlz     { background-color: #00d2d3; }
-.avatar-ocmz      { background-color: #2ed573; }
-.avatar-abuAbed   { background-color: #ffa502; }
-.avatar-opiilz    { background-color: #9b59b6; }
+.avatar-banderita { background-image: url('assets/sprites/avatar_banderita.png'); background-color: #ff3838; }
+.avatar-mlzlz     { background-image: url('assets/sprites/avatar_mlzlz.png'); background-color: #00d2d3; }
+.avatar-ocmz      { background-image: url('assets/sprites/avatar_ocmz.png'); background-color: #2ed573; }
+.avatar-abuAbed   { background-image: url('assets/sprites/avatar_3gaming.png'); background-color: #ffa502; }
+.avatar-3gaming   { background-image: url('assets/sprites/avatar_3gaming.png'); background-color: #ffa502; }
+.avatar-opiilz    { background-image: url('assets/sprites/avatar_opiilz.png'); background-color: #9b59b6; }
 .avatar-boss_lag  { background-color: #ff9f43; }
 .avatar-boss_dislike { background-color: #5f27cd; }
 .avatar-boss_ban_captain { background-color: #e74c3c; }
@@ -334,12 +337,12 @@ html, body {
 }
 
 .pixel-art-hero-banner { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
-.mini-hero { width: 34px; height: 34px; border-radius: 6px; border: 2px solid #fff; }
-.hero-1 { background: #ff3838; }
-.hero-2 { background: #00d2d3; }
-.hero-3 { background: #2ed573; }
-.hero-4 { background: #ffa502; }
-.hero-5 { background: #9b59b6; }
+.mini-hero { width: 34px; height: 34px; border-radius: 6px; border: 2px solid #fff; background-size: cover; background-position: center; }
+.hero-1 { background-image: url('assets/sprites/avatar_banderita.png'); background-color: #ff3838; }
+.hero-2 { background-image: url('assets/sprites/avatar_mlzlz.png'); background-color: #00d2d3; }
+.hero-3 { background-image: url('assets/sprites/avatar_ocmz.png'); background-color: #2ed573; }
+.hero-4 { background-image: url('assets/sprites/avatar_3gaming.png'); background-color: #ffa502; }
+.hero-5 { background-image: url('assets/sprites/avatar_opiilz.png'); background-color: #9b59b6; }
 
 .menu-game-title { font-family: var(--font-retro); font-size: 20px; color: var(--primary-neon); margin-bottom: 4px; }
 .menu-game-subtitle { font-size: 20px; font-weight: 900; color: var(--accent-gold); margin-bottom: 8px; }
@@ -482,10 +485,14 @@ html, body {
 }
 
 .dialogue-avatar {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   border-radius: 8px;
   border: 2px solid var(--accent-gold);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
 }
 
 .dialogue-speaker-name {

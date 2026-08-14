@@ -7,25 +7,41 @@ class AssetLoader {
     this.images = {};
     this.loaded = false;
     this.spritePaths = {
-      // Heroes
-      hero_banderita: 'assets/sprites/banderita.png',
-      hero_mlzlz: 'assets/sprites/mlzlz.png',
-      hero_ocmz: 'assets/sprites/osms.png',
-      hero_abuAbed: 'assets/sprites/abuabed.png',
-      hero_opiilz: 'assets/sprites/opels.png',
+      // 1. BanderitaX Sprites
+      banderita_idle: 'assets/sprites/banderita_idle.png',
+      banderita_walk: 'assets/sprites/banderita_walk.png',
+      banderita_attack: 'assets/sprites/banderita_attack.png',
+      avatar_banderita: 'assets/sprites/avatar_banderita.png',
 
-      // Weapons
-      weapon_tamees: 'assets/sprites/weapon_tamees.png',
-      weapon_potato: 'assets/sprites/weapon_potato.png',
-      weapon_tea: 'assets/sprites/weapon_tea.png',
-      weapon_hat: 'assets/sprites/weapon_hat.png',
-      weapon_bald: 'assets/sprites/weapon_bald.png',
-      weapon_screwdriver: 'assets/sprites/weapon_screwdriver.png',
+      // 2. MLZLZ Sprites
+      mlzlz_idle: 'assets/sprites/mlzlz_idle.png',
+      mlzlz_walk: 'assets/sprites/mlzlz_walk.png',
+      mlzlz_attack: 'assets/sprites/mlzlz_attack.png',
+      avatar_mlzlz: 'assets/sprites/avatar_mlzlz.png',
 
-      // Enemies & Bosses
-      enemy_glitch: 'assets/sprites/enemy_glitch.png',
-      enemy_dislike: 'assets/sprites/enemy_dislike.png',
-      enemy_spider: 'assets/sprites/enemy_spider.png',
+      // 3. oCMz Sprites
+      ocmz_idle: 'assets/sprites/ocmz_idle.png',
+      ocmz_walk: 'assets/sprites/ocmz_walk.png',
+      ocmz_attack: 'assets/sprites/ocmz_attack.png',
+      avatar_ocmz: 'assets/sprites/avatar_ocmz.png',
+
+      // 4. Abu Abed (3Gaming) Sprites
+      abuAbed_idle: 'assets/sprites/3gaming_idle.png',
+      abuAbed_walk: 'assets/sprites/3gaming_walk.png',
+      abuAbed_attack: 'assets/sprites/3gaming_attack.png',
+      avatar_abuAbed: 'assets/sprites/avatar_3gaming.png',
+      '3gaming_idle': 'assets/sprites/3gaming_idle.png',
+      '3gaming_walk': 'assets/sprites/3gaming_walk.png',
+      '3gaming_attack': 'assets/sprites/3gaming_attack.png',
+      avatar_3gaming: 'assets/sprites/avatar_3gaming.png',
+
+      // 5. oPiiLz Sprites
+      opiilz_idle: 'assets/sprites/opiilz_idle.png',
+      opiilz_walk: 'assets/sprites/opiilz_walk.png',
+      opiilz_attack: 'assets/sprites/opiilz_attack.png',
+      avatar_opiilz: 'assets/sprites/avatar_opiilz.png',
+
+      // Bosses & Enemies
       boss_lag_titan: 'assets/sprites/boss_lag_titan.png',
       boss_dislike_ghost: 'assets/sprites/boss_dislike_ghost.png',
       boss_captain_ban: 'assets/sprites/boss_captain_ban.png',
@@ -46,7 +62,6 @@ class AssetLoader {
         if (pending <= 0) this.loaded = true;
       };
       img.onerror = () => {
-        // Fallback gracefully to procedural 16-bit canvas rendering
         this.images[key] = null;
         pending--;
         if (pending <= 0) this.loaded = true;
