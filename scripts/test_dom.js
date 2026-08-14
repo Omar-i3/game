@@ -32,6 +32,7 @@ global.document = {
       },
       appendChild: () => {},
       querySelectorAll: () => [],
+      querySelector: () => null,
       getContext: () => ({
         clearRect: () => {},
         save: () => {},
@@ -40,6 +41,7 @@ global.document = {
         scale: () => {},
         rotate: () => {},
         fillRect: () => {},
+        strokeRect: () => {},
         beginPath: () => {},
         arc: () => {},
         ellipse: () => {},
@@ -65,7 +67,9 @@ global.document = {
     innerHTML: '',
     classList: { add: () => {}, remove: () => {}, toggle: () => {} },
     style: {},
-    addEventListener: () => {}
+    addEventListener: () => {},
+    appendChild: () => {},
+    querySelector: () => null
   })
 };
 
@@ -85,6 +89,8 @@ const scripts = [
   'src/audio.js',
   'src/particles.js',
   'src/dialogue.js',
+  'src/shop.js',
+  'src/achievements.js',
   'src/objectives.js',
   'src/player.js',
   'src/enemies.js',
@@ -98,7 +104,7 @@ for (const s of scripts) {
   eval(code);
 }
 
-console.log('✓ All modules loaded successfully!');
+console.log('✓ All modules loaded successfully including shop & achievements!');
 
 // Test Progression
 console.log('Testing Progression Manager...');
@@ -107,6 +113,17 @@ window.PROGRESSION.unlockNextLevel(1);
 console.log('After Level 1 complete, unlocked level:', window.PROGRESSION.getUnlockedLevel());
 window.PROGRESSION.saveLevelStats(1, 3, 5000);
 console.log('Level 1 stars:', window.PROGRESSION.getLevelStars(1));
+
+// Test Shop Upgrades
+console.log('Testing Shop Upgrades...');
+const buyRes = window.shop.buyItem('cheese_tamees', 100000);
+console.log('Buy cheese_tamees result:', buyRes);
+console.log('Has cheese_tamees upgrade:', window.shop.hasUpgrade('cheese_tamees'));
+
+// Test Achievements
+console.log('Testing Achievements...');
+window.achievements.unlock('speedrun_banderita');
+console.log('Is speedrun_banderita unlocked:', window.achievements.isUnlocked('speedrun_banderita'));
 
 // Test Game instantiation
 console.log('Testing Game Loop & UI Manager...');
@@ -135,6 +152,11 @@ for (let i = 1; i <= 20; i++) {
   }
 }
 console.log('✓ All 20 stages & enemies verified with valid numeric positions!');
+
+// Test Boss Rush Mode
+console.log('Testing Boss Rush Mode...');
+game.startBossRush(1);
+console.log('Boss Rush Stage loaded:', game.levelManager.stage.name, 'Boss:', game.levelManager.boss.name);
 
 // Test all click listeners
 console.log('Registered buttons:', Object.keys(clickListeners));

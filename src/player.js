@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - Hero System, Physics & State Machine
+// Arab Gamers: The 20-Stage Pixel Campaign - Hero System, Physics & Upgrades
 // ============================================================================
 
 const HERO_DATA = {
@@ -23,9 +23,8 @@ const HERO_DATA = {
     hasFlashDash: true,
     availableWeapons: ['tamees', 'potato'],
     selectedWeapon: 'tamees',
-    specialName: 'إعصار الغضب الناري (Fiery Rage Tornado)',
-    specialDesc: 'إعصار ناري جارف يمسح شاشة اللعبة من الأعداء والصواريخ',
-    specialDescEn: 'A blazing tornado of fire and exploding potatoes clearing the entire screen.'
+    specialName: 'إعصار الغضب الناري (Rage Tornado)',
+    memes: ['وش ذاااا?!', 'صدمة كروية!', 'كفووو يا أساطير!']
   },
   mlzlz: {
     id: 'mlzlz',
@@ -48,8 +47,7 @@ const HERO_DATA = {
     hasTacticalCalm: true,
     selectedWeapon: 'hotTea',
     specialName: 'فلاش الرعب وعاصفة الشاي (Horror Flash)',
-    specialDesc: 'تجميد الأعداء برذاذ الشاي واستدعاء أشباح شاي تطاردهم',
-    specialDescEn: 'Freezes all enemies and summons tea ghost spirits hunting them.'
+    memes: ['اركد يا وحش..', 'مع فنجال شاي ☕', 'هدوء تكتيكي بحت']
   },
   ocmz: {
     id: 'ocmz',
@@ -72,8 +70,7 @@ const HERO_DATA = {
     hasAnimeJump: true,
     selectedWeapon: 'strawHat',
     specialName: 'بناء الماينكرافت المطور (Block Barrage)',
-    specialDesc: 'إمطار السماء ببلوكات TNT وديموند متفجرة',
-    specialDescEn: 'Calls down explosive TNT and Minecraft block meteors.'
+    memes: ['إلى الجراند لاين! 👒', 'سيد البلوكات!', 'قفزة ثلاثية!']
   },
   abuAbed: {
     id: 'abuAbed',
@@ -95,8 +92,7 @@ const HERO_DATA = {
     hasSuperArmor: true,
     selectedWeapon: 'goldenBald',
     specialName: 'برج الريدستون الآلي (Redstone Turret)',
-    specialDesc: 'بناء برج ليزر أوتوماتيكي ذكي يطلق النار بكثافة',
-    specialDescEn: 'Deploys an automated rapid-fire redstone laser turret.'
+    memes: ['شوف التكتيك!', 'احترق بالنور! ☀️', 'ورشة الريدستون!']
   },
   opiilz: {
     id: 'opiilz',
@@ -118,8 +114,7 @@ const HERO_DATA = {
     hasSecurityEngineer: true,
     selectedWeapon: 'masterScrewdriver',
     specialName: 'لوح النيون النفاث (Hoverboard Strike)',
-    specialDesc: 'اندفاع نفاث بلوح النيون مع درب ناري بنفسجي مدمر',
-    specialDescEn: 'Supersonic hoverboard dash leaving an incinerating purple flame trail.'
+    memes: ['تم الفرمتة بنجاح! 🪛', 'اختراق النظام!', 'تفكيك شامل!']
   }
 };
 
@@ -144,17 +139,23 @@ class Player {
     this.invulnerableTimer = 0;
     this.dashTimer = 0;
     this.dashCooldown = 0;
+    this.lagTimer = 0;
     this.animFrame = 0;
     this.animTimer = 0;
-    this.state = 'idle'; // idle, walk, jump, fall, attack, hurt, special
+    this.state = 'idle';
 
-    // Boomerangs & Projectiles
+    // Visual Meme Speech Bubble
+    this.speechText = '';
+    this.speechTimer = 0;
+
+    // Projectiles & Upgrades
     this.projectiles = [];
     this.boomerangs = [];
     this.turrets = [];
     this.activeGhosts = [];
     this.fallingBlocks = [];
     this.teaParticles = [];
+    this.volcanicPuddles = [];
     this.baldBeamActive = false;
     this.baldBeamAngle = 0;
   }
@@ -170,6 +171,12 @@ class Player {
     this.defense = this.heroData.defense;
     this.maxJumps = this.heroData.maxJumps || (this.heroData.hasDoubleJump ? 2 : 1);
     this.jumpsLeft = this.maxJumps;
+
+    // Apply Shop Speed / Defense boosts
+    if (window.shop) {
+      if (window.shop.hasUpgrade('skin_silver_suit')) this.speed *= 1.1;
+      if (window.shop.hasUpgrade('skin_gold_armor')) this.defense += 15;
+    }
 
     if (this.heroId === 'banderita') {
       this.selectedWeapon = weaponChoice || this.heroData.selectedWeapon || 'tamees';
@@ -190,22 +197,36 @@ class Player {
     this.specialTimer = 0;
     this.invulnerableTimer = 0;
     this.dashTimer = 0;
+    this.lagTimer = 0;
+    this.speechTimer = 0;
     this.projectiles = [];
     this.boomerangs = [];
     this.turrets = [];
     this.activeGhosts = [];
     this.fallingBlocks = [];
     this.teaParticles = [];
+    this.volcanicPuddles = [];
     this.baldBeamActive = false;
     this.jumpsLeft = this.maxJumps;
     this.state = 'idle';
+  }
+
+  sayMeme(text = null) {
+    if (!text && this.heroData.memes) {
+      text = this.heroData.memes[Math.floor(Math.random() * this.heroData.memes.length)];
+    }
+    this.speechText = text || 'كفو!';
+    this.speechTimer = 80;
   }
 
   move(dir) {
     if (this.dashTimer > 0) return;
     if (this.isSpecialActive && this.heroId === 'opiilz') return;
 
-    this.vx = dir * this.speed;
+    let moveSpeed = this.speed;
+    if (this.lagTimer > 0) moveSpeed *= 0.4; // 999ms ping slowdown
+
+    this.vx = dir * moveSpeed;
     if (dir !== 0) this.facing = dir;
   }
 
@@ -221,9 +242,6 @@ class Player {
       } else if (this.jumpsLeft === 0 && this.maxJumps === 3) {
         if (window.audio) window.audio.sfxTripleJump();
         window.particles.burst(this.x + this.width / 2, this.y + this.height, 14, ['#ffd700', '#2ed573', '#ffffff'], 3, 7);
-      } else if (this.jumpsLeft === 0 && this.maxJumps === 2) {
-        if (window.audio) window.audio.sfxDoubleJump();
-        window.particles.burst(this.x + this.width / 2, this.y + this.height, 10, ['#2ed573', '#ffffff'], 2, 5);
       } else {
         if (window.audio) window.audio.sfxJump();
         window.particles.burst(this.x + this.width / 2, this.y + this.height, 6, ['#ecf0f1', '#bdc3c7'], 1, 4);
@@ -250,57 +268,66 @@ class Player {
     if (this.heroId === 'banderita') {
       if (this.selectedWeapon === 'tamees') {
         if (window.audio) window.audio.sfxTameesSlash();
-        window.particles.burst(this.x + (this.facing > 0 ? this.width + 10 : -10), this.y + 20, 10, ['#f39c12', '#e74c3c'], 2, 5);
+        const hasCheese = window.shop && window.shop.hasUpgrade('cheese_tamees');
+        window.particles.burst(this.x + (this.facing > 0 ? this.width + 10 : -10), this.y + 20, 10, hasCheese ? ['#ffd700', '#f1c40f', '#ff4757'] : ['#f39c12', '#e74c3c'], 2, 5);
       } else {
         if (window.audio) window.audio.sfxHotPotato();
+        const hasSpicy = window.shop && window.shop.hasUpgrade('spicy_potato');
         this.projectiles.push({
           x: this.facing > 0 ? this.x + this.width : this.x - 14,
           y: this.y + 16,
-          vx: this.facing * 10,
+          vx: this.facing * (hasSpicy ? 12 : 10),
           vy: -1,
-          radius: 9,
-          damage: this.attackPower,
-          color: '#f5b041',
+          radius: hasSpicy ? 11 : 9,
+          damage: this.attackPower * (hasSpicy ? 1.25 : 1),
+          color: hasSpicy ? '#e74c3c' : '#f5b041',
           life: 45,
-          type: 'potato'
+          type: 'potato',
+          isSpicy: hasSpicy
         });
       }
     } else if (this.heroId === 'mlzlz') {
       if (window.audio) window.audio.sfxTeaSpray();
-      for (let i = 0; i < 5; i++) {
+      const hasVolcanic = window.shop && window.shop.hasUpgrade('volcanic_karak');
+      for (let i = 0; i < (hasVolcanic ? 8 : 5); i++) {
         this.teaParticles.push({
           x: this.facing > 0 ? this.x + this.width : this.x - 10,
           y: this.y + 14 + (Math.random() - 0.5) * 8,
-          vx: this.facing * (6 + Math.random() * 4),
-          vy: (Math.random() - 0.5) * 3,
-          damage: this.attackPower * 0.35,
-          color: '#e67e22',
-          life: 25,
-          size: 6
+          vx: this.facing * (6 + Math.random() * 5),
+          vy: (Math.random() - 0.5) * 4,
+          damage: this.attackPower * (hasVolcanic ? 0.5 : 0.35),
+          color: hasVolcanic ? '#e74c3c' : '#e67e22',
+          life: 30,
+          size: hasVolcanic ? 8 : 6,
+          isVolcanic: hasVolcanic
         });
       }
     } else if (this.heroId === 'ocmz') {
       if (window.audio) window.audio.sfxHatBoomerang();
+      const hasDiamondHat = window.shop && window.shop.hasUpgrade('diamond_straw_hat');
       this.boomerangs.push({
         x: this.x + this.width / 2,
         y: this.y + 18,
         startX: this.x,
-        vx: this.facing * 12,
+        vx: this.facing * (hasDiamondHat ? 16 : 12),
         vy: 0,
-        maxDist: 260,
+        maxDist: hasDiamondHat ? 350 : 260,
         distanceTraveled: 0,
         returning: false,
-        damage: this.attackPower,
+        damage: this.attackPower * (hasDiamondHat ? 1.3 : 1),
         rotation: 0,
-        life: 70
+        life: 70,
+        isDiamond: hasDiamondHat
       });
     } else if (this.heroId === 'abuAbed') {
       if (window.audio) window.audio.sfxBaldBeam();
       this.baldBeamActive = true;
-      this.baldBeamTimer = 20;
+      const hasShades = window.shop && window.shop.hasUpgrade('reflective_shades');
+      this.baldBeamTimer = hasShades ? 35 : 20;
     } else if (this.heroId === 'opiilz') {
       if (window.audio) window.audio.sfxScrewdriverZap();
-      window.particles.burst(this.x + (this.facing > 0 ? this.width + 12 : -12), this.y + 18, 8, ['#9b59b6', '#00d2d3', '#ffffff'], 2, 5);
+      const hasTeravolt = window.shop && window.shop.hasUpgrade('teravolt_screwdriver');
+      window.particles.burst(this.x + (this.facing > 0 ? this.width + 12 : -12), this.y + 18, 12, hasTeravolt ? ['#00d2d3', '#ffd700', '#ffffff'] : ['#9b59b6', '#00d2d3'], 2, 6);
     }
   }
 
@@ -310,6 +337,7 @@ class Player {
     this.energy = 0;
     this.isSpecialActive = true;
     this.invulnerableTimer = 70;
+    this.sayMeme();
 
     window.particles.addFloatingText(this.x + this.width / 2, this.y - 20, this.heroData.specialName, '#fffa65', 16, '⚡');
 
@@ -324,13 +352,13 @@ class Player {
         this.specialTimer = 60;
         if (window.audio) window.audio.sfxHorrorGhost();
         window.particles.horrorFlash(this.x + this.width / 2, this.y + this.height / 2);
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
           this.activeGhosts.push({
             x: this.x + (Math.random() - 0.5) * 80,
             y: this.y - 40 - Math.random() * 40,
             vx: (Math.random() - 0.5) * 6,
             vy: -2 - Math.random() * 3,
-            damage: 60,
+            damage: 65,
             life: 180
           });
         }
@@ -339,12 +367,12 @@ class Player {
       case 'ocmz':
         this.specialTimer = 70;
         if (window.audio) window.audio.sfxBlockDrop();
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 12; i++) {
           this.fallingBlocks.push({
-            x: this.x - 220 + i * 55 + (Math.random() - 0.5) * 30,
+            x: this.x - 240 + i * 50 + (Math.random() - 0.5) * 30,
             y: this.y - 320 - i * 25,
             vy: 8 + Math.random() * 4,
-            damage: 65,
+            damage: 70,
             size: 26,
             color: i % 2 === 0 ? '#2ecc71' : '#e74c3c'
           });
@@ -352,13 +380,13 @@ class Player {
         break;
 
       case 'abuAbed':
-        this.specialTimer = 30;
+        this.specialTimer = 35;
         if (window.audio) window.audio.sfxTurretDeploy();
         this.turrets.push({
           x: this.x + (this.facing * 40),
           y: this.y + 10,
           shootCooldown: 0,
-          duration: 540,
+          duration: 560,
           facing: this.facing
         });
         window.particles.burst(this.x + (this.facing * 40), this.y + 20, 15, ['#e74c3c', '#ffa502'], 2, 6);
@@ -367,7 +395,7 @@ class Player {
       case 'opiilz':
         this.specialTimer = 55;
         if (window.audio) window.audio.sfxNeonDash();
-        this.vx = this.facing * 15;
+        this.vx = this.facing * 16;
         this.vy = 0;
         break;
     }
@@ -396,7 +424,9 @@ class Player {
   }
 
   addEnergy(amount) {
-    this.energy = Math.min(this.maxEnergy, this.energy + amount);
+    let multiplier = 1;
+    if (window.shop && window.shop.hasUpgrade('skin_diamond_skin')) multiplier = 1.5;
+    this.energy = Math.min(this.maxEnergy, this.energy + amount * multiplier);
     if (this.energy >= this.maxEnergy) {
       window.particles.addFloatingText(this.x + this.width / 2, this.y - 25, 'ULTIMATE READY!', '#2ed573', 13, '⚡');
     }
@@ -420,11 +450,19 @@ class Player {
       if (this.vy > 12) this.vy = 12;
     }
 
+    if (this.speechTimer > 0) this.speechTimer--;
+    if (this.lagTimer > 0) {
+      this.lagTimer--;
+      if (this.lagTimer % 10 === 0) {
+        window.particles.addFloatingText(this.x, this.y - 15, 'PING 999ms!', '#ff4757', 10);
+      }
+    }
+
     if (this.dashTimer > 0) {
       this.dashTimer--;
       window.particles.add(this.x + this.width / 2, this.y + this.height / 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, '#fffa65', 4, 12, 'spark');
     } else if (this.isSpecialActive && this.heroId === 'opiilz') {
-      this.vx = this.facing * 15;
+      this.vx = this.facing * 16;
       this.vy = 0;
       window.particles.neonTrail(this.x + (this.facing > 0 ? 0 : this.width), this.y + 30, this.facing);
     } else {
@@ -458,7 +496,7 @@ class Player {
       if (this.baldBeamTimer <= 0) this.baldBeamActive = false;
     }
 
-    // Animation Tick Frame calculation
+    // Animation Frame Tick
     this.animTimer++;
     if (this.animTimer >= 7) {
       this.animTimer = 0;
@@ -473,14 +511,14 @@ class Player {
     else if (Math.abs(this.vx) > 0.5) this.state = 'walk';
     else this.state = 'idle';
 
-    // 1. Hot Potato Projectiles
+    // 1. Hot Potato Projectiles + Spicy Cluster
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const proj = this.projectiles[i];
       proj.x += proj.vx;
       proj.y += proj.vy;
       proj.life--;
 
-      window.particles.add(proj.x, proj.y, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, '#ff4757', 3, 10, 'spark');
+      window.particles.add(proj.x, proj.y, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, proj.color, 3, 10, 'spark');
 
       let hit = false;
       if (enemies) {
@@ -503,12 +541,19 @@ class Player {
 
       if (hit || proj.life <= 0) {
         if (window.audio) window.audio.sfxExplosion();
-        window.particles.burst(proj.x, proj.y, 12, ['#f5b041', '#ff4757', '#ffffff'], 2, 6);
+        window.particles.burst(proj.x, proj.y, 14, [proj.color, '#ffffff', '#ffd700'], 2, 6);
+
+        if (proj.isSpicy && hit) {
+          // Spicy Cluster explosion fragments
+          for (let s = 0; s < 3; s++) {
+            window.particles.burst(proj.x + (s - 1) * 20, proj.y - 10, 8, ['#e74c3c', '#ffd700'], 2, 4);
+          }
+        }
         this.projectiles.splice(i, 1);
       }
     }
 
-    // 2. MLZLZ Tea Spray
+    // 2. MLZLZ Tea Spray + Volcanic Puddles
     for (let i = this.teaParticles.length - 1; i >= 0; i--) {
       const tea = this.teaParticles[i];
       tea.x += tea.vx;
@@ -519,7 +564,7 @@ class Player {
         for (const enemy of enemies) {
           if (!enemy.isDead && Math.hypot(tea.x - (enemy.x + enemy.width / 2), tea.y - (enemy.y + enemy.height / 2)) < (tea.size + enemy.width / 2)) {
             enemy.takeDamage(tea.damage, Math.sign(tea.vx));
-            enemy.frozenTimer = 30;
+            enemy.frozenTimer = 35;
             this.addEnergy(4);
           }
         }
@@ -535,9 +580,7 @@ class Player {
         for (const obj of interactiveObjects) {
           if (!obj.activated && Math.hypot(tea.x - obj.x, tea.y - obj.y) < 40) {
             obj.activated = true;
-            if (window.game && window.game.objectives) {
-              window.game.objectives.recordPuzzleTrigger(obj.id);
-            }
+            if (window.game && window.game.objectives) window.game.objectives.recordPuzzleTrigger(obj.id);
             window.particles.burst(obj.x, obj.y, 15, ['#f39c12', '#ffd700'], 2, 6);
           }
         }
@@ -546,7 +589,7 @@ class Player {
       if (tea.life <= 0) this.teaParticles.splice(i, 1);
     }
 
-    // 3. oCMz Straw Hat Boomerang
+    // 3. oCMz Straw Hat Boomerang (Diamond Piercing)
     for (let i = this.boomerangs.length - 1; i >= 0; i--) {
       const hat = this.boomerangs[i];
       hat.rotation += 0.4;
@@ -558,8 +601,8 @@ class Player {
         if (hat.distanceTraveled >= hat.maxDist) hat.returning = true;
       } else {
         const angle = Math.atan2((this.y + 18) - hat.y, (this.x + this.width / 2) - hat.x);
-        hat.vx = Math.cos(angle) * 14;
-        hat.vy = Math.sin(angle) * 14;
+        hat.vx = Math.cos(angle) * 15;
+        hat.vy = Math.sin(angle) * 15;
         hat.x += hat.vx;
         hat.y += hat.vy;
 
@@ -590,23 +633,22 @@ class Player {
 
     // 4. Abu Abed Solar Light Beam
     if (this.baldBeamActive) {
+      const radius = (window.shop && window.shop.hasUpgrade('reflective_shades')) ? 220 : 140;
       if (enemies) {
         for (const enemy of enemies) {
-          if (!enemy.isDead && Math.hypot(this.x - enemy.x, this.y - enemy.y) < 140) {
-            enemy.takeDamage(12, Math.sign(enemy.x - this.x));
+          if (!enemy.isDead && Math.hypot(this.x - enemy.x, this.y - enemy.y) < radius) {
+            enemy.takeDamage(14, Math.sign(enemy.x - this.x));
           }
         }
       }
-      if (boss && !boss.isDead && Math.hypot(this.x - boss.x, this.y - boss.y) < 150) {
-        boss.takeDamage(15);
+      if (boss && !boss.isDead && Math.hypot(this.x - boss.x, this.y - boss.y) < radius) {
+        boss.takeDamage(16);
       }
       if (interactiveObjects) {
         for (const obj of interactiveObjects) {
-          if (!obj.activated && obj.type === 'mirror' && Math.hypot(this.x - obj.x, this.y - obj.y) < 150) {
+          if (!obj.activated && obj.type === 'mirror' && Math.hypot(this.x - obj.x, this.y - obj.y) < radius) {
             obj.activated = true;
-            if (window.game && window.game.objectives) {
-              window.game.objectives.recordPuzzleTrigger(obj.id);
-            }
+            if (window.game && window.game.objectives) window.game.objectives.recordPuzzleTrigger(obj.id);
             window.particles.burst(obj.x, obj.y, 18, ['#ffd700', '#ffffff'], 3, 7);
           }
         }
@@ -629,7 +671,7 @@ class Player {
           }
         }
         if (target) {
-          turret.shootCooldown = 26;
+          turret.shootCooldown = 24;
           if (window.audio) window.audio.playTone(980, 'sawtooth', 0.08, 0.2, 0.01, 200);
           const angle = Math.atan2((target.y + target.height / 2) - turret.y, (target.x + target.width / 2) - turret.x);
           this.projectiles.push({
@@ -638,7 +680,7 @@ class Player {
             vx: Math.cos(angle) * 11,
             vy: Math.sin(angle) * 11,
             radius: 5,
-            damage: 22,
+            damage: 24,
             color: '#e74c3c',
             life: 40,
             type: 'laser'
@@ -650,6 +692,7 @@ class Player {
   }
 
   checkPlatformCollisionHorizontal(platforms) {
+    if (!platforms) return;
     for (const p of platforms) {
       if (p.isOneWay) continue;
       if (this.x < p.x + p.w && this.x + this.width > p.x &&
@@ -661,6 +704,7 @@ class Player {
   }
 
   checkPlatformCollisionVertical(platforms) {
+    if (!platforms) return;
     for (const p of platforms) {
       if (p.isOneWay) {
         if (this.vy > 0 &&
@@ -695,19 +739,26 @@ class Player {
       return { x: this.x - 10, y: this.y - 10, width: this.width + 20, height: this.height + 20, damage: 95, knockback: this.facing * 12 };
     }
 
-    const range = this.heroData.attackRange;
+    let range = this.heroData.attackRange;
+    let knock = this.facing * (this.selectedWeapon === 'tamees' ? 10 : 6);
+
+    if (this.heroId === 'banderita' && this.selectedWeapon === 'tamees' && window.shop && window.shop.hasUpgrade('cheese_tamees')) {
+      range *= 1.3;
+      knock *= 1.4;
+    }
+
     return {
       x: this.facing > 0 ? this.x + this.width : this.x - range,
       y: this.y + 6,
       width: range,
       height: this.height - 12,
       damage: this.heroData.critRate && Math.random() < this.heroData.critRate ? this.attackPower * 2.0 : this.attackPower,
-      knockback: this.facing * (this.selectedWeapon === 'tamees' ? 10 : 6)
+      knockback: knock
     };
   }
 
   // --------------------------------------------------------------------------
-  // Crisp Pixel-Art Character & Sprite Renderer
+  // Crisp Pixel-Art Character & Sprite Renderer + Meme Speech Bubbles
   // --------------------------------------------------------------------------
   draw(ctx, cameraX = 0, cameraY = 0) {
     const px = Math.round(this.x - cameraX);
@@ -720,7 +771,7 @@ class Player {
       ctx.save();
       ctx.translate(hx, hy);
       ctx.rotate(hat.rotation);
-      ctx.fillStyle = '#f1c40f';
+      ctx.fillStyle = hat.isDiamond ? '#00d2d3' : '#f1c40f';
       ctx.beginPath();
       ctx.ellipse(0, 0, 16, 7, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -743,14 +794,15 @@ class Player {
 
     // Solar Light Beam
     if (this.baldBeamActive) {
+      const radius = (window.shop && window.shop.hasUpgrade('reflective_shades')) ? 220 : 140;
       ctx.save();
-      const beamGrad = ctx.createRadialGradient(px + this.width / 2, py - 10, 5, px + this.width / 2, py - 10, 140);
+      const beamGrad = ctx.createRadialGradient(px + this.width / 2, py - 10, 5, px + this.width / 2, py - 10, radius);
       beamGrad.addColorStop(0, 'rgba(255, 250, 101, 0.9)');
       beamGrad.addColorStop(0.5, 'rgba(255, 215, 0, 0.5)');
       beamGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
       ctx.fillStyle = beamGrad;
       ctx.beginPath();
-      ctx.arc(px + this.width / 2, py - 10, 140, 0, Math.PI * 2);
+      ctx.arc(px + this.width / 2, py - 10, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -767,13 +819,41 @@ class Player {
       ctx.restore();
     }
 
+    // Visual Meme Speech Bubble
+    if (this.speechTimer > 0) {
+      ctx.save();
+      ctx.font = 'bold 11px "Cairo", sans-serif';
+      const textW = ctx.measureText(this.speechText).width;
+      const bubbleX = px + this.width / 2 - textW / 2 - 8;
+      const bubbleY = py - 32;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.fillRect(bubbleX, bubbleY, textW + 16, 22);
+      ctx.strokeRect(bubbleX, bubbleY, textW + 16, 22);
+
+      // Tail
+      ctx.beginPath();
+      ctx.moveTo(px + this.width / 2 - 4, bubbleY + 22);
+      ctx.lineTo(px + this.width / 2, bubbleY + 28);
+      ctx.lineTo(px + this.width / 2 + 4, bubbleY + 22);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.speechText, px + this.width / 2, bubbleY + 15);
+      ctx.restore();
+    }
+
     if (this.invulnerableTimer > 0 && Math.floor(this.invulnerableTimer / 4) % 2 === 0) return;
 
     ctx.save();
     ctx.translate(px + this.width / 2, py + this.height / 2);
     ctx.scale(this.facing, 1);
 
-    // Retrieve custom transparent sprite images
+    // Retrieve transparent sprite images
     const heroKey = this.heroId;
     const walkImg = window.assets ? window.assets.getImage(`${heroKey}_walk`) : null;
     const idleImg = window.assets ? window.assets.getImage(`${heroKey}_idle`) : null;
@@ -782,7 +862,6 @@ class Player {
     let spriteRendered = false;
 
     if (this.state === 'attack' && attackImg && attackImg.complete) {
-      // 4-frame attack strip
       const progress = 1 - (this.attackTimer / this.heroData.attackDuration);
       const fIdx = Math.min(3, Math.floor(progress * 4));
       const fw = attackImg.width / 4;
@@ -795,7 +874,6 @@ class Player {
       spriteRendered = true;
 
     } else if (this.state === 'walk' && walkImg && walkImg.complete) {
-      // 4-frame walk strip
       const fIdx = this.animFrame % 4;
       const fw = walkImg.width / 4;
       const fh = walkImg.height;
@@ -807,7 +885,6 @@ class Player {
       spriteRendered = true;
 
     } else if (idleImg && idleImg.complete) {
-      // Idle standing sprite
       const dw = this.width * 1.4;
       const dh = this.height * 1.2;
       ctx.imageSmoothingEnabled = false;
@@ -815,7 +892,6 @@ class Player {
       spriteRendered = true;
     }
 
-    // Procedural Fallback if sprite is loading
     if (!spriteRendered) {
       const bob = (this.state === 'walk') ? Math.sin(this.animFrame * Math.PI / 2) * 3 : 0;
       const legOffset = (this.state === 'walk') ? (this.animFrame % 2 === 0 ? 4 : -4) : 0;
@@ -829,8 +905,6 @@ class Player {
       }
     }
 
-    if (this.isAttacking && !spriteRendered) this.drawWeaponSlash(ctx);
-
     ctx.restore();
   }
 
@@ -838,10 +912,6 @@ class Player {
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(-10, 10 + bob, 8, 14 + legOffset);
     ctx.fillRect(2, 10 + bob, 8, 14 - legOffset);
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(-12, 22 + bob + legOffset, 10, 4);
-    ctx.fillRect(2, 22 + bob - legOffset, 10, 4);
-
     ctx.fillStyle = '#c0392b';
     ctx.fillRect(-14, -8 + bob, 28, 20);
     ctx.fillStyle = '#fcd0a1';
@@ -850,18 +920,6 @@ class Player {
     ctx.fillRect(-10, -12 + bob, 20, 7);
     ctx.fillStyle = '#e74c3c';
     ctx.fillRect(-12, -26 + bob, 24, 5);
-
-    if (this.selectedWeapon === 'tamees') {
-      ctx.fillStyle = '#f5cd79';
-      ctx.beginPath();
-      ctx.arc(14, 0 + bob, 8, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.fillStyle = '#f5b041';
-      ctx.beginPath();
-      ctx.arc(12, 0 + bob, 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
   }
 
   drawMLZLZ(ctx, bob, legOffset) {
@@ -874,12 +932,6 @@ class Player {
     ctx.fillRect(-9, -24 + bob, 18, 16);
     ctx.fillStyle = '#00d2d3';
     ctx.fillRect(-11, -26 + bob, 4, 10);
-    ctx.fillRect(-9, -29 + bob, 18, 3);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(10, -2 + bob, 10, 10);
-    ctx.fillStyle = '#e67e22';
-    ctx.fillRect(12, -4 + bob, 6, 2);
   }
 
   drawOCMz(ctx, bob, legOffset) {
@@ -890,13 +942,6 @@ class Player {
     ctx.fillRect(-11, -8 + bob, 22, 19);
     ctx.fillStyle = '#fed330';
     ctx.fillRect(-8, -24 + bob, 16, 16);
-
-    if (this.boomerangs.length === 0) {
-      ctx.fillStyle = '#f1c40f';
-      ctx.fillRect(-12, -30 + bob, 24, 5);
-      ctx.fillStyle = '#e74c3c';
-      ctx.fillRect(-6, -33 + bob, 12, 3);
-    }
   }
 
   drawAbuAbed(ctx, bob, legOffset) {
@@ -905,11 +950,6 @@ class Player {
     ctx.fillRect(1, 10 + bob, 8, 14 - legOffset);
     ctx.fillStyle = '#f0932b';
     ctx.fillRect(-12, -8 + bob, 24, 20);
-    ctx.fillStyle = '#ffbe76';
-    ctx.fillRect(-9, -24 + bob, 18, 16);
-    ctx.fillStyle = '#30336b';
-    ctx.fillRect(-9, -12 + bob, 18, 5);
-
     ctx.fillStyle = '#ffd700';
     ctx.beginPath();
     ctx.arc(0, -24 + bob, 10, Math.PI, 0);
@@ -923,21 +963,6 @@ class Player {
     ctx.fillRect(-11, -8 + bob, 22, 18);
     ctx.fillStyle = '#ffeaa7';
     ctx.fillRect(-8, -24 + bob, 16, 16);
-
-    ctx.fillStyle = '#badc58';
-    ctx.fillRect(10, 0 + bob, 14, 4);
-    ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(6, -1 + bob, 6, 6);
-  }
-
-  drawWeaponSlash(ctx) {
-    ctx.save();
-    ctx.strokeStyle = this.heroData.secondaryColor || '#ffff00';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(14, 0, this.heroData.attackRange * 0.7, -0.6, 0.6);
-    ctx.stroke();
-    ctx.restore();
   }
 }
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - UI, Progression & Stage Clear Engine
+// Arab Gamers: The 20-Stage Pixel Campaign - Full UI, Shop, Modes & Achievements
 // ============================================================================
 
 class UIManager {
@@ -13,6 +13,9 @@ class UIManager {
     this.mainMenuModal = document.getElementById('main-menu-modal');
     this.campaignMapModal = document.getElementById('campaign-map-modal');
     this.loreModal = document.getElementById('lore-modal');
+    this.shopModal = document.getElementById('shop-modal');
+    this.achievementsModal = document.getElementById('achievements-modal');
+    this.modesModal = document.getElementById('modes-modal');
     this.weaponSelectModal = document.getElementById('weapon-select-modal');
     this.dialogueModal = document.getElementById('dialogue-modal');
     this.stageClearModal = document.getElementById('stage-clear-modal');
@@ -21,6 +24,8 @@ class UIManager {
     this.pauseModal = document.getElementById('pause-modal');
 
     this.initCampaignMapUI();
+    this.initShopUI();
+    this.initAchievementsUI();
     this.setupEventListeners();
   }
 
@@ -79,6 +84,76 @@ class UIManager {
         }
       });
 
+      grid.appendChild(card);
+    }
+  }
+
+  initShopUI() {
+    const grid = document.getElementById('shop-items-grid');
+    if (!grid || !window.SHOP_ITEMS) return;
+
+    grid.innerHTML = '';
+    const totalSubs = window.game ? window.game.totalSubscribers : 1000;
+    const subsEl = document.getElementById('shop-subs-count');
+    if (subsEl) subsEl.textContent = totalSubs.toLocaleString();
+
+    for (const [key, item] of Object.entries(window.SHOP_ITEMS)) {
+      const isOwned = window.shop ? window.shop.hasUpgrade(key) : false;
+      const card = document.createElement('div');
+      card.className = `shop-item-card ${isOwned ? 'owned' : ''}`;
+      card.innerHTML = `
+        <div class="shop-item-icon">${item.icon}</div>
+        <div class="shop-item-info">
+          <span class="shop-item-name">${item.name}</span>
+          <span class="shop-item-desc">${item.desc}</span>
+        </div>
+        <div class="shop-item-action">
+          <span class="shop-item-cost">👥 ${item.cost.toLocaleString()}</span>
+          <button class="btn-retro ${isOwned ? 'btn-owned' : 'btn-buy'}" data-item="${key}">
+            ${isOwned ? '✅ ممتلك' : 'شراء 🛒'}
+          </button>
+        </div>
+      `;
+
+      const buyBtn = card.querySelector('button');
+      if (buyBtn && !isOwned) {
+        buyBtn.addEventListener('click', () => {
+          const currentSubs = window.game ? window.game.totalSubscribers : 0;
+          const res = window.shop.buyItem(key, currentSubs);
+          if (res.success) {
+            if (window.game) window.game.totalSubscribers -= res.cost;
+            this.initShopUI();
+            if (typeof window.alert === 'function') window.alert(`🎉 تم شراء: ${item.name} بنجاح!`);
+          } else {
+            if (typeof window.alert === 'function') window.alert(res.reason);
+          }
+        });
+      }
+
+      grid.appendChild(card);
+    }
+  }
+
+  initAchievementsUI() {
+    const grid = document.getElementById('achievements-list-grid');
+    if (!grid || !window.ACHIEVEMENTS_DATA) return;
+
+    grid.innerHTML = '';
+
+    for (const [key, ach] of Object.entries(window.ACHIEVEMENTS_DATA)) {
+      const isUnlocked = window.achievements ? window.achievements.isUnlocked(key) : false;
+      const card = document.createElement('div');
+      card.className = `achievement-item-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+      card.innerHTML = `
+        <div class="ach-icon">${ach.icon}</div>
+        <div class="ach-info">
+          <span class="ach-title">${ach.title}</span>
+          <span class="ach-desc">${ach.desc}</span>
+        </div>
+        <div class="ach-badge">
+          ${isUnlocked ? '<span class="ach-tag-unlocked">🏆 تم الفتح</span>' : '<span class="ach-tag-locked">🔒 مغلق</span>'}
+        </div>
+      `;
       grid.appendChild(card);
     }
   }
@@ -144,6 +219,81 @@ class UIManager {
         try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
         this.initCampaignMapUI();
         this.showScreen('campaignMap');
+      });
+    }
+
+    const btnOpenShop = document.getElementById('btn-open-shop');
+    if (btnOpenShop) {
+      btnOpenShop.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initShopUI();
+        this.showScreen('shop');
+      });
+    }
+
+    const btnCloseShop = document.getElementById('btn-close-shop');
+    if (btnCloseShop) {
+      btnCloseShop.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
+    const btnOpenAchievements = document.getElementById('btn-open-achievements');
+    if (btnOpenAchievements) {
+      btnOpenAchievements.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initAchievementsUI();
+        this.showScreen('achievements');
+      });
+    }
+
+    const btnCloseAchievements = document.getElementById('btn-close-achievements');
+    if (btnCloseAchievements) {
+      btnCloseAchievements.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
+    const btnOpenModes = document.getElementById('btn-open-modes');
+    if (btnOpenModes) {
+      btnOpenModes.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('modes');
+      });
+    }
+
+    const btnCloseModes = document.getElementById('btn-close-modes');
+    if (btnCloseModes) {
+      btnCloseModes.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
+    const btnModeCampaign = document.getElementById('btn-mode-campaign');
+    if (btnModeCampaign) {
+      btnModeCampaign.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initCampaignMapUI();
+        this.showScreen('campaignMap');
+      });
+    }
+
+    const btnModeBossrush = document.getElementById('btn-mode-bossrush');
+    if (btnModeBossrush) {
+      btnModeBossrush.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        if (window.game) window.game.startBossRush(1);
       });
     }
 
@@ -348,6 +498,9 @@ class UIManager {
       else if (screenName === 'victory') window.game.state = 'victory';
       else if (screenName === 'campaignMap') window.game.state = 'campaignMap';
       else if (screenName === 'weaponSelect') window.game.state = 'weaponSelect';
+      else if (screenName === 'shop') window.game.state = 'shop';
+      else if (screenName === 'achievements') window.game.state = 'achievements';
+      else if (screenName === 'modes') window.game.state = 'modes';
       else if (screenName === 'lore') window.game.state = 'lore';
       else if (screenName === 'menu') window.game.state = 'menu';
     }
@@ -355,6 +508,9 @@ class UIManager {
     if (this.mainMenuModal) this.mainMenuModal.classList.toggle('hidden', screenName !== 'menu');
     if (this.campaignMapModal) this.campaignMapModal.classList.toggle('hidden', screenName !== 'campaignMap');
     if (this.loreModal) this.loreModal.classList.toggle('hidden', screenName !== 'lore');
+    if (this.shopModal) this.shopModal.classList.toggle('hidden', screenName !== 'shop');
+    if (this.achievementsModal) this.achievementsModal.classList.toggle('hidden', screenName !== 'achievements');
+    if (this.modesModal) this.modesModal.classList.toggle('hidden', screenName !== 'modes');
     if (this.weaponSelectModal) this.weaponSelectModal.classList.toggle('hidden', screenName !== 'weaponSelect');
     if (this.stageClearModal) this.stageClearModal.classList.toggle('hidden', screenName !== 'stageClear');
     if (this.gameOverModal) this.gameOverModal.classList.toggle('hidden', screenName !== 'gameOver');

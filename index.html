@@ -18,6 +18,9 @@
   <!-- CRT Scanline & Glow Layer -->
   <div class="crt-overlay"></div>
 
+  <!-- Achievements Toast Notification Container -->
+  <div id="achievement-toast-container" class="achievement-toast-container"></div>
+
   <main class="arcade-wrapper" id="arcade-wrapper">
     <!-- Arcade Header -->
     <header class="arcade-header">
@@ -120,7 +123,7 @@
           </div>
           <h2 class="menu-game-title">ARAB GAMERS</h2>
           <h3 class="menu-game-subtitle">أساطير اليوتيوب: حرب الخوارزمية المظلمة</h3>
-          <p class="menu-tagline">20 مرحلة ملحمية، حوارات قصصية، وأسلحة فريدة في مواجهة Error 404!</p>
+          <p class="menu-tagline">20 مرحلة ملحمية، متجر ترقيات صانعي المحتوى، إنجازات ريترو، وحوارات مشوقة!</p>
 
           <div class="menu-actions-grid">
             <button id="btn-start-story" class="btn-retro btn-primary-start">
@@ -129,12 +132,80 @@
             <button id="btn-open-map" class="btn-retro btn-map-select">
               <span class="btn-icon">🗺️</span> اختيار المراحل (STAGE SELECT)
             </button>
+            <button id="btn-open-shop" class="btn-retro btn-shop-open">
+              <span class="btn-icon">🛍️</span> متجر الدروع والترقيات (SHOP)
+            </button>
+            <button id="btn-open-modes" class="btn-retro btn-modes-open">
+              <span class="btn-icon">⚔️</span> أطوار اللعبة الإضافية (MODES)
+            </button>
+            <button id="btn-open-achievements" class="btn-retro btn-ach-open">
+              <span class="btn-icon">🏆</span> قائمة الإنجازات (ACHIEVEMENTS)
+            </button>
             <button id="btn-open-lore" class="btn-retro btn-lore-open">
-              <span class="btn-icon">📖</span> شرح اللعبة والقصة (LORE)
+              <span class="btn-icon">📖</span> القصة والتحكم (HOW TO PLAY)
             </button>
-            <button id="btn-reset-progress" class="btn-retro btn-reset-prog">
-              <span class="btn-icon">🔄</span> إعادة ضبط (RESET)
+            <button id="btn-reset-progress" class="btn-retro btn-reset-prog" style="grid-column: span 2;">
+              <span class="btn-icon">🔄</span> إعادة ضبط التقدم (RESET PROGRESS)
             </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- YouTube Merch & Upgrades Shop Modal -->
+      <section id="shop-modal" class="screen-modal shop-screen hidden" aria-label="YouTube Merch Shop">
+        <div class="shop-card">
+          <div class="shop-header-row">
+            <h2 class="screen-title">🛍️ متجر الدروع وترقيات الأبطال</h2>
+            <div class="shop-subs-badge">رصيد المشتركين: <span id="shop-subs-count">0</span> 👥</div>
+          </div>
+          <p class="screen-subtitle">اشترِ ترقيات أسلحة أساطير اليوتيوب ودروع المليونير الدائمة!</p>
+
+          <div id="shop-items-grid" class="shop-items-grid">
+            <!-- Dynamically populated from JS -->
+          </div>
+
+          <div class="shop-footer">
+            <button id="btn-close-shop" class="btn-retro btn-primary">العودة للقائمة الرئيسية</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Retro Achievements Modal -->
+      <section id="achievements-modal" class="screen-modal achievements-screen hidden" aria-label="Achievements">
+        <div class="achievements-card">
+          <h2 class="screen-title">🏆 قائمة الإنجازات الأسطورية</h2>
+          <p class="screen-subtitle">أنجز التحديات الخارقة أثناء مسيرتك لفتح كؤوس المجد!</p>
+
+          <div id="achievements-list-grid" class="achievements-list-grid">
+            <!-- Dynamically populated from JS -->
+          </div>
+
+          <div class="achievements-footer">
+            <button id="btn-close-achievements" class="btn-retro btn-primary">العودة للقائمة الرئيسية</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Extra Modes Modal -->
+      <section id="modes-modal" class="screen-modal modes-screen hidden" aria-label="Extra Modes">
+        <div class="modes-card">
+          <h2 class="screen-title">⚔️ اختر طور اللعب</h2>
+          <div class="modes-selection-grid">
+            <div class="mode-box" id="btn-mode-campaign">
+              <div class="mode-icon">🗺️</div>
+              <h3 class="mode-title">طور القصة (20 مرحلة)</h3>
+              <p class="mode-desc">خوض الحملة الكاملة لإنقاذ المشتركين وسحق الخوارزمية المظلمة بتتابع القفل والنجوم.</p>
+              <button class="btn-retro btn-primary">دخول الحملة</button>
+            </div>
+            <div class="mode-box" id="btn-mode-bossrush">
+              <div class="mode-icon">☠️</div>
+              <h3 class="mode-title">طور البوس راش (Boss Rush)</h3>
+              <p class="mode-desc">مواجهة الزعماء الخمسة الكبار متتاليين بدون توقف مع عداد زمني للسرعة القصوى!</p>
+              <button class="btn-retro btn-danger">بدء البوس راش</button>
+            </div>
+          </div>
+          <div class="modes-footer">
+            <button id="btn-close-modes" class="btn-retro btn-retro-mini">العودة للقائمة</button>
           </div>
         </div>
       </section>
@@ -358,6 +429,8 @@
   <script src="src/audio.js"></script>
   <script src="src/particles.js"></script>
   <script src="src/dialogue.js"></script>
+  <script src="src/shop.js"></script>
+  <script src="src/achievements.js"></script>
   <script src="src/objectives.js"></script>
   <script src="src/player.js"></script>
   <script src="src/enemies.js"></script>

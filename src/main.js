@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - Main Controller & Game Loop
+// Arab Gamers: The 20-Stage Pixel Campaign - Main Controller & Game Modes
 // ============================================================================
 
 class Game {
@@ -17,7 +17,11 @@ class Game {
     this.shakeIntensity = 0;
     this.shakeDecay = 0.9;
 
-    this.state = 'menu'; // menu, campaignMap, lore, weaponSelect, dialogue, playing, stageClear, paused, gameover, victory
+    this.gameMode = 'campaign'; // campaign, bossRush, endless
+    this.bossRushIndex = 1;
+    this.endlessWave = 1;
+
+    this.state = 'menu'; // menu, campaignMap, lore, shop, achievements, modes, weaponSelect, dialogue, playing, stageClear, paused, gameover, victory
     this.score = 0;
     this.totalSubscribers = 1000;
     this.levelSubscribers = 0;
@@ -157,6 +161,7 @@ class Game {
   }
 
   startStage(stageIndex, heroId = 'banderita', weaponChoice = null) {
+    this.gameMode = 'campaign';
     this.enemyProjectiles = [];
     this.levelSubscribers = 0;
     this.stageTimer = 0;
@@ -178,10 +183,32 @@ class Game {
     });
   }
 
+  startBossRush(bossIndex = 1) {
+    this.gameMode = 'bossRush';
+    this.bossRushIndex = bossIndex;
+    this.enemyProjectiles = [];
+    this.levelSubscribers = 0;
+    this.stageTimer = 0;
+    this.combo = 0;
+    this.comboTimer = 0;
+    window.particles.reset();
+
+    this.player.setHero('banderita');
+    this.player.resetPosition(80, 420);
+    this.levelManager.loadBossRushStage(bossIndex);
+
+    this.state = 'playing';
+    this.ui.showScreen('game');
+  }
+
   restartStage() {
-    const currentIdx = this.levelManager.currentStageIndex || 1;
-    const stage = window.CAMPAIGN_STAGES[currentIdx];
-    this.startStage(currentIdx, stage.heroId);
+    if (this.gameMode === 'bossRush') {
+      this.startBossRush(this.bossRushIndex);
+    } else {
+      const currentIdx = this.levelManager.currentStageIndex || 1;
+      const stage = window.CAMPAIGN_STAGES[currentIdx];
+      this.startStage(currentIdx, stage ? stage.heroId : 'banderita');
+    }
   }
 
   completeStage() {
@@ -195,9 +222,41 @@ class Game {
     if (totalSec > 150) stars = 1;
 
     // Save Progress to localStorage
-    if (window.PROGRESSION) {
+    if (this.gameMode === 'campaign' && window.PROGRESSION) {
       window.PROGRESSION.unlockNextLevel(currentIdx);
       window.PROGRESSION.saveLevelStats(currentIdx, stars, this.score);
+    }
+
+    // Check & Trigger Achievements
+    if (window.achievements) {
+      if (this.player.heroId === 'banderita' && totalSec <= 35) {
+        window.achievements.unlock('speedrun_banderita');
+      }
+      if (this.player.heroId === 'mlzlz' && this.player.hp >= this.player.maxHp) {
+        window.achievements.unlock('no_damage_mlzlz');
+      }
+      if ((this.totalSubscribers + this.levelSubscribers) >= 1000000) {
+        window.achievements.unlock('million_subs');
+      }
+      if (this.player.heroId === 'opiilz' && this.objectives.current >= 6) {
+        window.achievements.unlock('master_hacker');
+      }
+      if (this.player.heroId === 'abuAbed' && stage.objectiveType === 'BOSS_DEFEAT') {
+        window.achievements.unlock('bald_supremacy');
+      }
+    }
+
+    if (this.gameMode === 'bossRush') {
+      if (this.bossRushIndex < 5) {
+        this.startBossRush(this.bossRushIndex + 1);
+      } else {
+        this.ui.showVictory({
+          subs: this.totalSubscribers + this.levelSubscribers,
+          score: this.score,
+          heroName: 'بطل البوس راش الخارق 👑'
+        });
+      }
+      return;
     }
 
     // Trigger Outro Dialogue
@@ -281,6 +340,13 @@ class Game {
             this.player.y < enemy.y + enemy.height && this.player.y + this.player.height > enemy.y) {
           const knockback = Math.sign(this.player.x - enemy.x) || 1;
           this.player.takeDamage(enemy.damage, knockback);
+
+          // Copyright Drone steals subscribers
+          if (enemy.isCopyright) {
+            this.levelSubscribers = Math.max(0, this.levelSubscribers - 2000);
+            window.particles.addFloatingText(this.player.x, this.player.y - 25, '⚠️ مخالفة كوبي رايت! (-2,000 مشترك)', '#ffa502', 13);
+            if (window.audio) window.audio.sfxPortalLocked();
+          }
         }
       }
 
@@ -315,7 +381,13 @@ class Game {
         if (!enemy.isDead &&
             hitbox.x < enemy.x + enemy.width && hitbox.x + hitbox.width > enemy.x &&
             hitbox.y < enemy.y + enemy.height && hitbox.y + hitbox.height > enemy.y) {
-          enemy.takeDamage(hitbox.damage, hitbox.knockback);
+
+          if (enemy.isAdBarrier) {
+            enemy.takeDamage(1, 0); // 5 hits to break
+          } else {
+            enemy.takeDamage(hitbox.damage, hitbox.knockback);
+          }
+
           this.player.addEnergy(12);
           this.combo++;
           this.comboTimer = 90;
@@ -380,7 +452,7 @@ class Game {
           this.player.y + this.player.height > port.y && this.player.y < port.y + port.h) {
 
         const isQuestDone = this.objectives.isCompleted;
-        const requiredSubs = this.levelManager.stage.requiredSubsQuota || 50000;
+        const requiredSubs = this.levelManager.stage.requiredSubsQuota || 0;
         const hasEnoughSubs = this.levelSubscribers >= requiredSubs;
 
         if (!isQuestDone) {
@@ -395,8 +467,17 @@ class Game {
       }
     }
 
+    // Shadow Ban Pit Checkpoint Respawn
     if (this.player.y > 640) {
-      this.player.takeDamage(999);
+      if (this.levelManager.lastCheckpoint) {
+        this.player.resetPosition(this.levelManager.lastCheckpoint.x, this.levelManager.lastCheckpoint.y);
+        this.player.takeDamage(20);
+        this.addScreenShake(8);
+        window.particles.burst(this.player.x, this.player.y, 16, ['#5f27cd', '#a55eea', '#ff4757'], 2, 6);
+        window.particles.addFloatingText(this.player.x, this.player.y - 30, '⚠️ شادو باند! تمت إعادتك لنقطة الحفظ!', '#a55eea', 13);
+      } else {
+        this.player.takeDamage(999);
+      }
     }
 
     if (this.player.hp <= 0) {
@@ -444,11 +525,11 @@ class Game {
       const prx = Math.round(proj.x - this.cameraX);
       const pry = Math.round(proj.y - this.cameraY);
       this.ctx.save();
-      ctx.fillStyle = proj.color;
-      ctx.beginPath();
-      ctx.arc(prx, pry, proj.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      this.ctx.fillStyle = proj.color;
+      this.ctx.beginPath();
+      this.ctx.arc(prx, pry, proj.radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
     }
 
     if (this.player) this.player.draw(this.ctx, this.cameraX, this.cameraY);

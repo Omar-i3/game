@@ -768,6 +768,9 @@ class LevelManager {
     this.pickups = [];
     this.enemies = [];
     this.interactiveObjects = [];
+    this.checkpoints = [{ x: 80, y: 420 }];
+    this.lastCheckpoint = { x: 80, y: 420 };
+    this.pingLagZones = [];
     this.boss = null;
     this.portal = null;
     this.midDialogueTriggered = false;
@@ -785,12 +788,30 @@ class LevelManager {
     this.interactiveObjects = JSON.parse(JSON.stringify(this.stage.interactiveObjects || []));
     this.portal = this.stage.exitPortal ? JSON.parse(JSON.stringify(this.stage.exitPortal)) : null;
 
+    // Checkpoints & Ping 999ms Zones
+    this.checkpoints = [
+      { x: 80, y: 420 },
+      { x: Math.floor(this.stage.width * 0.5), y: 400 }
+    ];
+    this.lastCheckpoint = { x: 80, y: 420 };
+
+    this.pingLagZones = [
+      { x: Math.floor(this.stage.width * 0.35), w: 300 },
+      { x: Math.floor(this.stage.width * 0.7), w: 300 }
+    ];
+
     // Instantiate Enemies (Defensive parameters)
     this.enemies = [];
     if (this.stage.enemies) {
       for (const e of this.stage.enemies) {
         this.enemies.push(new window.Enemy(e.type, e.x, e.y));
       }
+    }
+
+    // Add 1 Unskippable Ad Barrier in every regular level
+    if (!this.stage.boss && this.stage.width > 2000) {
+      this.enemies.push(new window.Enemy('unskippableAdBarrier', Math.floor(this.stage.width * 0.6), 440));
+      this.enemies.push(new window.Enemy('copyrightDrone', Math.floor(this.stage.width * 0.45), 320));
     }
 
     // Instantiate Boss
@@ -800,6 +821,48 @@ class LevelManager {
     }
 
     // Bind Objective
+    if (window.game && window.game.objectives) {
+      window.game.objectives.initObjective(this.stage);
+    }
+  }
+
+  loadBossRushStage(bossIndex = 1) {
+    const bossTypes = ['lagTitan', 'dislikeGhost', 'captainBan', 'glitchDrill', 'darkAlgorithm'];
+    const bType = bossTypes[bossIndex - 1] || 'lagTitan';
+
+    this.currentStageIndex = `B-${bossIndex}`;
+    this.stage = {
+      id: `BR-${bossIndex}`,
+      name: `بوس راش: زعيم ${bossIndex}/5`,
+      nameEn: `Boss Rush ${bossIndex}/5`,
+      heroId: 'banderita',
+      width: 3600,
+      height: 650,
+      skyColor: '#1e0024',
+      requiredSubsQuota: 0,
+      objectiveType: 'BOSS_DEFEAT',
+      objectiveTitle: `سحق الزعيم ${bossIndex}`,
+      objectiveDesc: 'اهزم الزعيم للانتقال للزعيم التالي فوراً!'
+    };
+
+    this.platforms = [
+      { x: 0, y: 520, w: 3600, h: 100, type: 'steel' },
+      { x: 400, y: 380, w: 240, h: 20, type: 'holo', isOneWay: true },
+      { x: 900, y: 270, w: 240, h: 20, type: 'steel', isOneWay: true },
+      { x: 1500, y: 380, w: 240, h: 20, type: 'holo', isOneWay: true }
+    ];
+    this.hazards = [];
+    this.pickups = [
+      { x: 500, y: 330, type: 'shawarma' },
+      { x: 1000, y: 220, type: 'karak' }
+    ];
+    this.interactiveObjects = [];
+    this.enemies = [];
+    this.boss = new window.Boss(bType, 2200, 300);
+    this.portal = { x: 3450, y: 440, w: 50, h: 80 };
+    this.lastCheckpoint = { x: 80, y: 420 };
+    this.pingLagZones = [];
+
     if (window.game && window.game.objectives) {
       window.game.objectives.initObjective(this.stage);
     }
@@ -848,6 +911,30 @@ class LevelManager {
         }
 
         this.pickups.splice(i, 1);
+      }
+    }
+
+    // Checkpoints Trigger
+    for (const cp of this.checkpoints) {
+      if (player.x >= cp.x && this.lastCheckpoint.x < cp.x) {
+        this.lastCheckpoint = cp;
+        if (window.particles) {
+          window.particles.burst(cp.x, cp.y, 14, ['#2ed573', '#ffffff', '#ffd700'], 2, 6);
+          window.particles.addFloatingText(cp.x, cp.y - 20, '🚩 نقطة حفظ (CHECKPOINT)!', '#2ed573', 14);
+        }
+      }
+    }
+
+    // Ping 999ms Lag Zone Check
+    for (const zone of this.pingLagZones) {
+      if (player.x >= zone.x && player.x <= zone.x + zone.w) {
+        if (player.lagTimer <= 0) {
+          player.lagTimer = 180; // 3 seconds lag
+          if (window.audio) window.audio.sfxPortalLocked();
+          if (window.particles) {
+            window.particles.burst(player.x, player.y, 10, ['#ff4757', '#fffa65'], 2, 4);
+          }
+        }
       }
     }
 

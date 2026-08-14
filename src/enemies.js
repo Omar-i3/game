@@ -91,6 +91,23 @@ class Enemy {
         this.subsReward = 3500; this.scoreReward = 500; this.color = '#eb4d4b';
         break;
 
+      case 'copyrightDrone':
+        this.name = 'طائرة الكوبي رايت ⚠️';
+        this.width = 38; this.height = 34;
+        this.hp = 65; this.maxHp = 65; this.damage = 18; this.speed = 2.6;
+        this.isFlying = true;
+        this.isCopyright = true;
+        this.subsReward = 3000; this.scoreReward = 450; this.color = '#ffa502';
+        break;
+
+      case 'unskippableAdBarrier':
+        this.name = 'جدار الإعلانات الإجباري 🛑';
+        this.width = 34; this.height = 80;
+        this.hp = 5; this.maxHp = 5; this.damage = 0; this.speed = 0;
+        this.isAdBarrier = true;
+        this.subsReward = 2000; this.scoreReward = 300; this.color = '#ff0055';
+        break;
+
       default:
         this.name = 'فيروس جليتش';
         this.width = 32; this.height = 36;
@@ -285,6 +302,14 @@ class Enemy {
         this.drawEliteGuard(ctx, bob);
         break;
 
+      case 'copyrightDrone':
+        this.drawCopyrightDrone(ctx, bob);
+        break;
+
+      case 'unskippableAdBarrier':
+        this.drawAdBarrier(ctx);
+        break;
+
       default:
         ctx.fillStyle = this.color;
         ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
@@ -292,6 +317,29 @@ class Enemy {
     }
 
     ctx.restore();
+  }
+
+  drawCopyrightDrone(ctx, bob) {
+    ctx.fillStyle = '#ffa502';
+    ctx.beginPath();
+    ctx.ellipse(0, 0 + bob, 18, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-6, -14 + bob, 12, 4); // Yellow warning badge
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 9px "Press Start 2P", sans-serif';
+    ctx.fillText('!', 0, -5 + bob);
+  }
+
+  drawAdBarrier(ctx) {
+    ctx.fillStyle = 'rgba(255, 0, 85, 0.85)';
+    ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px "Cairo", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('AD 🛑', 0, -10);
+    ctx.font = 'bold 8px "Cairo", sans-serif';
+    ctx.fillText(`إعلان (${this.hp})`, 0, 10);
   }
 
   drawGlitchBot(ctx, bob) {
