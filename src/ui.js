@@ -56,20 +56,23 @@ class UIManager {
 
   selectStage(stageIndex) {
     this.selectedStageIndex = stageIndex;
-    if (window.audio) window.audio.sfxMenuSelect();
+    try { if (window.audio && window.audio.sfxMenuSelect) window.audio.sfxMenuSelect(); } catch(e){}
 
     const cards = document.querySelectorAll('.stage-card');
     cards.forEach((c, idx) => {
       c.classList.toggle('selected', idx + 1 === stageIndex);
     });
 
-    const stage = window.CAMPAIGN_STAGES[stageIndex];
+    const stage = window.CAMPAIGN_STAGES ? window.CAMPAIGN_STAGES[stageIndex] : null;
     const previewEl = document.getElementById('map-stage-preview');
     if (previewEl && stage) {
+      const hero = window.HERO_DATA ? window.HERO_DATA[stage.heroId] : null;
+      const heroName = hero ? hero.name : stage.heroId;
+      const heroClass = hero ? hero.class : '';
       previewEl.innerHTML = `
         <h3>مرحلة ${stageIndex}: ${stage.name} (${stage.nameEn})</h3>
         <p class="preview-quest"><strong>المهمة:</strong> ${stage.objectiveDesc}</p>
-        <p class="preview-hero"><strong>البطل المخصص:</strong> ${window.HERO_DATA[stage.heroId].name} (${window.HERO_DATA[stage.heroId].class})</p>
+        <p class="preview-hero"><strong>البطل المخصص:</strong> ${heroName} (${heroClass})</p>
       `;
     }
   }
@@ -78,10 +81,15 @@ class UIManager {
     // Menu buttons
     const btnStart = document.getElementById('btn-start-game');
     if (btnStart) {
-      btnStart.addEventListener('click', () => {
-        if (window.audio) {
-          window.audio.ensureContext();
-          window.audio.sfxMenuConfirm();
+      btnStart.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try {
+          if (window.audio) {
+            window.audio.ensureContext();
+            if (window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm();
+          }
+        } catch(err) {
+          console.warn('Audio play error:', err);
         }
         this.showScreen('campaignMap');
       });
@@ -89,15 +97,16 @@ class UIManager {
 
     const btnLaunchStage = document.getElementById('btn-launch-stage');
     if (btnLaunchStage) {
-      btnLaunchStage.addEventListener('click', () => {
-        if (window.audio) window.audio.sfxMenuConfirm();
+      btnLaunchStage.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
         const stage = window.CAMPAIGN_STAGES[this.selectedStageIndex];
 
         // If stage is Banderita, open Weapon Selection modal first
-        if (stage.heroId === 'banderita') {
+        if (stage && stage.heroId === 'banderita') {
           this.showScreen('weaponSelect');
-        } else {
-          window.game.startStage(this.selectedStageIndex, stage.heroId);
+        } else if (window.game) {
+          window.game.startStage(this.selectedStageIndex, stage ? stage.heroId : 'banderita');
         }
       });
     }
@@ -105,48 +114,58 @@ class UIManager {
     // Banderita Weapon Choice buttons
     const btnChooseTamees = document.getElementById('btn-weapon-tamees');
     if (btnChooseTamees) {
-      btnChooseTamees.addEventListener('click', () => {
-        if (window.audio) window.audio.sfxMenuConfirm();
-        window.game.startStage(this.selectedStageIndex, 'banderita', 'tamees');
+      btnChooseTamees.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        if (window.game) window.game.startStage(this.selectedStageIndex, 'banderita', 'tamees');
       });
     }
 
     const btnChoosePotato = document.getElementById('btn-weapon-potato');
     if (btnChoosePotato) {
-      btnChoosePotato.addEventListener('click', () => {
-        if (window.audio) window.audio.sfxMenuConfirm();
-        window.game.startStage(this.selectedStageIndex, 'banderita', 'potato');
+      btnChoosePotato.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        if (window.game) window.game.startStage(this.selectedStageIndex, 'banderita', 'potato');
       });
     }
 
     const btnRetry = document.getElementById('btn-retry');
     if (btnRetry) {
-      btnRetry.addEventListener('click', () => {
-        if (window.audio) window.audio.sfxMenuConfirm();
-        window.game.restartStage();
+      btnRetry.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        if (window.game) window.game.restartStage();
       });
     }
 
     const btnBackToMap = document.getElementById('btn-back-to-map');
     if (btnBackToMap) {
-      btnBackToMap.addEventListener('click', () => {
-        if (window.audio) window.audio.sfxMenuConfirm();
+      btnBackToMap.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
         this.showScreen('campaignMap');
       });
     }
 
     const btnSoundToggle = document.getElementById('btn-toggle-sound');
     if (btnSoundToggle) {
-      btnSoundToggle.addEventListener('click', () => {
-        const isMuted = window.audio.toggleMute();
-        btnSoundToggle.textContent = isMuted ? '🔇 الصوت: مغلق' : '🔊 الصوت: يعمل';
-        btnSoundToggle.classList.toggle('muted', isMuted);
+      btnSoundToggle.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (window.audio) {
+          const isMuted = window.audio.toggleMute();
+          btnSoundToggle.textContent = isMuted ? '🔇 الصوت: مغلق' : '🔊 الصوت: يعمل';
+          btnSoundToggle.classList.toggle('muted', isMuted);
+        }
       });
     }
 
     const btnResume = document.getElementById('btn-resume');
     if (btnResume) {
-      btnResume.addEventListener('click', () => window.game.togglePause());
+      btnResume.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (window.game) window.game.togglePause();
+      });
     }
 
     // Touch controls

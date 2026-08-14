@@ -238,6 +238,15 @@ class SoundEngine {
     this.playNoise(0.7, 0.5, 500);
   }
 
+  sfxMenuSelect() {
+    this.playTone(520, 'square', 0.06, 0.25, 0.01, 680);
+  }
+
+  sfxMenuConfirm() {
+    this.playTone(440, 'square', 0.08, 0.3, 0.01, 880);
+    setTimeout(() => this.playTone(880, 'triangle', 0.12, 0.35, 0.01), 60);
+  }
+
   sfxLevelClear() {
     const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
     notes.forEach((freq, i) => {
