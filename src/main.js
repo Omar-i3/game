@@ -17,10 +17,11 @@ class Game {
     this.shakeIntensity = 0;
     this.shakeDecay = 0.9;
 
-    this.state = 'menu'; // menu, campaignMap, lore, weaponSelect, dialogue, playing, paused, gameover, victory
+    this.state = 'menu'; // menu, campaignMap, lore, weaponSelect, dialogue, playing, stageClear, paused, gameover, victory
     this.score = 0;
     this.totalSubscribers = 1000;
     this.levelSubscribers = 0;
+    this.stageTimer = 0;
     this.combo = 0;
     this.comboTimer = 0;
 
@@ -81,12 +82,18 @@ class Game {
           this.inputs.attack = true;
           this.handleAttackPress();
           break;
-        case 'KeyK': case 'KeyL': case 'KeyX':
+
+        case 'KeyK': case 'KeyX': case 'KeyL':
+          this.handleDashPress();
+          break;
+
+        case 'KeyU': case 'KeyI': case 'KeyC':
           this.inputs.special = true;
           this.handleSpecialPress();
           break;
-        case 'ShiftLeft': case 'ShiftRight':
-          this.handleDashPress();
+
+        case 'KeyE': case 'Enter':
+          if (this.state === 'dialogue') this.dialogue.advance();
           break;
 
         case 'Digit1': this.switchHero(0); break;
@@ -106,7 +113,7 @@ class Game {
         case 'KeyW': case 'ArrowUp': case 'Space': this.inputs.jump = false; break;
         case 'KeyS': case 'ArrowDown': this.inputs.down = false; break;
         case 'KeyJ': case 'KeyZ': this.inputs.attack = false; break;
-        case 'KeyK': case 'KeyL': case 'KeyX': this.inputs.special = false; break;
+        case 'KeyU': case 'KeyI': case 'KeyC': this.inputs.special = false; break;
       }
     });
   }
@@ -152,6 +159,7 @@ class Game {
   startStage(stageIndex, heroId = 'banderita', weaponChoice = null) {
     this.enemyProjectiles = [];
     this.levelSubscribers = 0;
+    this.stageTimer = 0;
     this.combo = 0;
     this.comboTimer = 0;
     window.particles.reset();
@@ -178,36 +186,46 @@ class Game {
 
   completeStage() {
     const currentIdx = this.levelManager.currentStageIndex;
+    const stage = this.levelManager.stage;
 
-    // Unlock next level in localStorage
+    // Calculate Star Rating
+    const totalSec = Math.floor(this.stageTimer / 60);
+    let stars = 3;
+    if (totalSec > 90) stars = 2;
+    if (totalSec > 150) stars = 1;
+
+    // Save Progress to localStorage
     if (window.PROGRESSION) {
       window.PROGRESSION.unlockNextLevel(currentIdx);
-      window.PROGRESSION.saveLevelStats(currentIdx, 3, this.score);
+      window.PROGRESSION.saveLevelStats(currentIdx, stars, this.score);
     }
-
-    if (window.audio) window.audio.sfxLevelClear();
 
     // Trigger Outro Dialogue
     this.dialogue.startDialogue(currentIdx, 'outro', () => {
-      this.addScore(1000);
+      this.addScore(1500);
       this.totalSubscribers += this.levelSubscribers;
 
-      const nextStage = currentIdx + 1;
-      if (nextStage <= 20) {
-        const nextData = window.CAMPAIGN_STAGES[nextStage];
-        if (nextData.heroId === 'banderita') {
-          this.levelManager.currentStageIndex = nextStage;
-          this.ui.showScreen('weaponSelect');
-        } else {
-          this.startStage(nextStage, nextData.heroId);
-        }
-      } else {
-        // Grand Victory
-        this.state = 'victory';
+      const mins = Math.floor(totalSec / 60).toString().padStart(2, '0');
+      const secs = (totalSec % 60).toString().padStart(2, '0');
+      const timeStr = `${mins}:${secs} ثانية`;
+
+      if (currentIdx >= 20) {
+        // Grand Campaign Victory
         this.ui.showVictory({
           subs: this.totalSubscribers,
           score: this.score,
           heroName: 'أساطير اليوتيوب العرب'
+        });
+      } else {
+        // Show Stage Clear Rating Screen
+        this.ui.showStageClear({
+          stageIndex: currentIdx,
+          nextStageIndex: currentIdx + 1,
+          stars: stars,
+          subs: this.levelSubscribers,
+          quota: stage.requiredSubsQuota,
+          timeStr: timeStr,
+          score: this.score
         });
       }
     });
@@ -241,6 +259,8 @@ class Game {
       window.particles.update();
       return;
     }
+
+    this.stageTimer++;
 
     let moveDir = 0;
     if (this.inputs.left) moveDir -= 1;
@@ -283,7 +303,7 @@ class Game {
         if (this.player.x < boss.x + boss.width && this.player.x + this.player.width > boss.x &&
             this.player.y < boss.y + boss.height && this.player.y + this.player.height > boss.y) {
           const knockback = Math.sign(this.player.x - boss.x) || 1;
-          this.player.takeDamage(30, knockback);
+          this.player.takeDamage(28, knockback);
         }
       }
     }
@@ -315,7 +335,7 @@ class Game {
         }
       }
 
-      // Check interactive objects with screwdriver / melee
+      // Check interactive objects
       if (this.levelManager.interactiveObjects) {
         for (const obj of this.levelManager.interactiveObjects) {
           if (!obj.activated &&
@@ -375,7 +395,7 @@ class Game {
       }
     }
 
-    if (this.player.y > 620) {
+    if (this.player.y > 640) {
       this.player.takeDamage(999);
     }
 
@@ -384,10 +404,14 @@ class Game {
       this.ui.showGameOver({ subs: this.levelSubscribers, score: this.score });
     }
 
-    // Camera scrolling (supports wide 5000px stages)
+    // Smooth-Follow Camera (X and Y with stage boundary clamping)
     const targetCamX = this.player.x - this.width / 2 + this.player.width / 2;
+    const targetCamY = this.player.y - this.height / 2 + this.player.height / 2;
     const maxCamX = Math.max(0, this.levelManager.stage.width - this.width);
-    this.cameraX += (Math.max(0, Math.min(maxCamX, targetCamX)) - this.cameraX) * 0.1;
+    const maxCamY = Math.max(0, (this.levelManager.stage.height || 650) - this.height);
+
+    this.cameraX += (Math.max(0, Math.min(maxCamX, targetCamX)) - this.cameraX) * 0.12;
+    this.cameraY += (Math.max(0, Math.min(maxCamY, targetCamY)) - this.cameraY) * 0.12;
 
     if (this.shakeIntensity > 0) {
       this.shakeIntensity *= this.shakeDecay;
@@ -417,14 +441,14 @@ class Game {
     if (this.levelManager.boss) this.levelManager.boss.draw(this.ctx, this.cameraX, this.cameraY);
 
     for (const proj of this.enemyProjectiles) {
-      const prx = Math.round(proj.x - cameraX);
-      const pry = Math.round(proj.y - cameraY);
+      const prx = Math.round(proj.x - this.cameraX);
+      const pry = Math.round(proj.y - this.cameraY);
       this.ctx.save();
-      this.ctx.fillStyle = proj.color;
-      this.ctx.beginPath();
-      this.ctx.arc(prx, pry, proj.radius, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.restore();
+      ctx.fillStyle = proj.color;
+      ctx.beginPath();
+      ctx.arc(prx, pry, proj.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
     if (this.player) this.player.draw(this.ctx, this.cameraX, this.cameraY);
@@ -432,14 +456,14 @@ class Game {
 
     if (this.combo > 1) {
       this.ctx.save();
-      this.ctx.font = 'bold 18px "Press Start 2P", sans-serif';
+      this.ctx.font = 'bold 16px "Press Start 2P", sans-serif';
       this.ctx.fillStyle = '#fffa65';
       this.ctx.strokeStyle = '#000000';
       this.ctx.lineWidth = 3;
       this.ctx.textAlign = 'right';
       const comboTxt = `x${this.combo} COMBO! 🔥`;
-      this.ctx.strokeText(comboTxt, this.width - 24, 100);
-      this.ctx.fillText(comboTxt, this.width - 24, 100);
+      this.ctx.strokeText(comboTxt, this.width - 20, 110);
+      this.ctx.fillText(comboTxt, this.width - 20, 110);
       this.ctx.restore();
     }
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - UI, Progression & Menu Engine
+// Arab Gamers: The 20-Stage Pixel Campaign - UI, Progression & Stage Clear Engine
 // ============================================================================
 
 class UIManager {
@@ -15,6 +15,7 @@ class UIManager {
     this.loreModal = document.getElementById('lore-modal');
     this.weaponSelectModal = document.getElementById('weapon-select-modal');
     this.dialogueModal = document.getElementById('dialogue-modal');
+    this.stageClearModal = document.getElementById('stage-clear-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
     this.victoryModal = document.getElementById('victory-modal');
     this.pauseModal = document.getElementById('pause-modal');
@@ -208,7 +209,43 @@ class UIManager {
       });
     }
 
-    // 3. Retry Button (Robust clean restart)
+    // 3. Stage Clear Modal Buttons
+    const btnClearNext = document.getElementById('btn-stage-clear-next');
+    if (btnClearNext) {
+      btnClearNext.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        const currentIdx = window.game ? window.game.levelManager.currentStageIndex : 1;
+        const nextStage = currentIdx + 1;
+        if (nextStage <= 20) {
+          this.selectedStageIndex = nextStage;
+          this.launchSelectedStage();
+        } else {
+          this.showScreen('victory');
+        }
+      });
+    }
+
+    const btnClearMap = document.getElementById('btn-stage-clear-map');
+    if (btnClearMap) {
+      btnClearMap.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initCampaignMapUI();
+        this.showScreen('campaignMap');
+      });
+    }
+
+    const btnClearRetry = document.getElementById('btn-stage-clear-retry');
+    if (btnClearRetry) {
+      btnClearRetry.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        if (window.game) window.game.restartStage();
+      });
+    }
+
+    // 4. Retry & Return Buttons
     const btnRetry = document.getElementById('btn-retry');
     if (btnRetry) {
       btnRetry.addEventListener('click', (e) => {
@@ -218,7 +255,6 @@ class UIManager {
       });
     }
 
-    // 4. Return to Main Menu / Map Buttons
     const btnGameOverMenu = document.getElementById('btn-gameover-menu');
     if (btnGameOverMenu) {
       btnGameOverMenu.addEventListener('click', (e) => {
@@ -307,6 +343,7 @@ class UIManager {
     if (window.game) {
       if (screenName === 'game') window.game.state = 'playing';
       else if (screenName === 'pause') window.game.state = 'paused';
+      else if (screenName === 'stageClear') window.game.state = 'stageClear';
       else if (screenName === 'gameOver') window.game.state = 'gameover';
       else if (screenName === 'victory') window.game.state = 'victory';
       else if (screenName === 'campaignMap') window.game.state = 'campaignMap';
@@ -319,6 +356,7 @@ class UIManager {
     if (this.campaignMapModal) this.campaignMapModal.classList.toggle('hidden', screenName !== 'campaignMap');
     if (this.loreModal) this.loreModal.classList.toggle('hidden', screenName !== 'lore');
     if (this.weaponSelectModal) this.weaponSelectModal.classList.toggle('hidden', screenName !== 'weaponSelect');
+    if (this.stageClearModal) this.stageClearModal.classList.toggle('hidden', screenName !== 'stageClear');
     if (this.gameOverModal) this.gameOverModal.classList.toggle('hidden', screenName !== 'gameOver');
     if (this.victoryModal) this.victoryModal.classList.toggle('hidden', screenName !== 'victory');
     if (this.pauseModal) this.pauseModal.classList.toggle('hidden', screenName !== 'pause');
@@ -336,7 +374,7 @@ class UIManager {
 
     const heroNameEl = document.getElementById('hud-hero-name');
     if (heroNameEl) {
-      heroNameEl.textContent = `${player.heroData.name} (${player.heroData.nameEn})`;
+      heroNameEl.textContent = `${player.heroData.name}`;
     }
 
     const hpFill = document.getElementById('hud-hp-fill');
@@ -349,25 +387,11 @@ class UIManager {
 
     const energyFill = document.getElementById('hud-energy-fill');
     const energyText = document.getElementById('hud-energy-text');
-    const ultStatus = document.getElementById('hud-ult-status');
     if (energyFill && energyText) {
       const energyPct = Math.min(100, Math.max(0, (player.energy / player.maxEnergy) * 100));
       energyFill.style.width = `${energyPct}%`;
       energyText.textContent = `${Math.floor(energyPct)}%`;
-
-      if (energyPct >= 100) {
-        energyFill.classList.add('ready');
-        if (ultStatus) {
-          ultStatus.textContent = '⚡ جاهز! (K / ULT)';
-          ultStatus.classList.add('glowing');
-        }
-      } else {
-        energyFill.classList.remove('ready');
-        if (ultStatus) {
-          ultStatus.textContent = player.heroData.specialName;
-          ultStatus.classList.remove('glowing');
-        }
-      }
+      energyFill.classList.toggle('ready', energyPct >= 100);
     }
 
     // Subscriber Quota Progress HUD
@@ -388,6 +412,15 @@ class UIManager {
           quotaEl.className = 'quota-status';
         }
       }
+    }
+
+    // Timer & Score
+    const timerEl = document.getElementById('hud-timer-val');
+    if (timerEl && window.game) {
+      const totalSec = Math.floor(window.game.stageTimer / 60);
+      const mins = Math.floor(totalSec / 60).toString().padStart(2, '0');
+      const secs = (totalSec % 60).toString().padStart(2, '0');
+      timerEl.textContent = `${mins}:${secs}`;
     }
 
     const scoreEl = document.getElementById('hud-score-counter');
@@ -413,6 +446,33 @@ class UIManager {
         bossHud.classList.add('hidden');
       }
     }
+  }
+
+  showStageClear(stats) {
+    if (window.audio) window.audio.sfxLevelClear();
+    if (window.particles) window.particles.spawnConfetti(window.game.canvas.width, window.game.canvas.height, 80);
+
+    const titleEl = document.getElementById('clear-stage-title');
+    const starsEl = document.getElementById('clear-stars');
+    const subsEl = document.getElementById('clear-subs');
+    const timeEl = document.getElementById('clear-time');
+    const scoreEl = document.getElementById('clear-score');
+    const nextMsgEl = document.getElementById('clear-next-msg');
+
+    const stageIdx = stats.stageIndex || 1;
+    const stars = stats.stars || 3;
+    const starsDisplay = '★'.repeat(stars) + '☆'.repeat(Math.max(0, 3 - stars));
+
+    if (titleEl) titleEl.textContent = `🎉 تم إنهاء مرحلة ${stageIdx} بنجاح!`;
+    if (starsEl) starsEl.textContent = starsDisplay;
+    if (subsEl) subsEl.textContent = `${Number(stats.subs || 0).toLocaleString()} / ${Number(stats.quota || 0).toLocaleString()} 👥`;
+    if (timeEl) timeEl.textContent = `${stats.timeStr || '00:45s'}`;
+    if (scoreEl) scoreEl.textContent = `${Number(stats.score || 0).toLocaleString()}`;
+    if (nextMsgEl) {
+      nextMsgEl.textContent = stageIdx < 20 ? `🔓 تم فتح المرحلة ${stageIdx + 1} بنجاح!` : '👑 تم إنهاء جميع مراحل الحملة!';
+    }
+
+    this.showScreen('stageClear');
   }
 
   showGameOver(stats) {

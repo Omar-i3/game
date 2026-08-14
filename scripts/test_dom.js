@@ -42,6 +42,10 @@ global.document = {
         fillRect: () => {},
         beginPath: () => {},
         arc: () => {},
+        ellipse: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        closePath: () => {},
         fill: () => {},
         stroke: () => {},
         drawImage: () => {},
@@ -108,6 +112,29 @@ console.log('Level 1 stars:', window.PROGRESSION.getLevelStars(1));
 console.log('Testing Game Loop & UI Manager...');
 const game = new window.Game();
 console.log('Game created with state:', game.state);
+
+// Test all 20 stages loading and enemy coordinates verification
+console.log('Verifying all 20 stages loading & enemy coordinates...');
+for (let i = 1; i <= 20; i++) {
+  game.levelManager.loadStage(i);
+  const stage = game.levelManager.stage;
+  if (!stage) throw new Error(`Stage ${i} failed to load!`);
+
+  // Verify enemy instances
+  for (const enemy of game.levelManager.enemies) {
+    if (isNaN(enemy.x) || isNaN(enemy.y)) {
+      throw new Error(`Stage ${i} has an enemy with NaN position! Enemy: ${JSON.stringify(enemy)}`);
+    }
+  }
+
+  // Verify boss instance
+  if (game.levelManager.boss) {
+    if (isNaN(game.levelManager.boss.x) || isNaN(game.levelManager.boss.y)) {
+      throw new Error(`Stage ${i} boss has NaN position! Boss: ${JSON.stringify(game.levelManager.boss)}`);
+    }
+  }
+}
+console.log('✓ All 20 stages & enemies verified with valid numeric positions!');
 
 // Test all click listeners
 console.log('Registered buttons:', Object.keys(clickListeners));
