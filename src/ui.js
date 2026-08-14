@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - UI & Campaign Map Manager
+// Arab Gamers: The 20-Stage Pixel Campaign - UI, Progression & Menu Engine
 // ============================================================================
 
 class UIManager {
@@ -7,17 +7,17 @@ class UIManager {
     this.selectedHeroIndex = 0;
     this.heroKeys = ['banderita', 'mlzlz', 'ocmz', 'abuAbed', 'opiilz'];
     this.selectedStageIndex = 1;
-    this.unlockedStage = 20; // All 20 stages unlocked for immediate playability
 
     // DOM Elements
     this.hudElement = document.getElementById('hud');
+    this.mainMenuModal = document.getElementById('main-menu-modal');
     this.campaignMapModal = document.getElementById('campaign-map-modal');
+    this.loreModal = document.getElementById('lore-modal');
     this.weaponSelectModal = document.getElementById('weapon-select-modal');
     this.dialogueModal = document.getElementById('dialogue-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
     this.victoryModal = document.getElementById('victory-modal');
     this.pauseModal = document.getElementById('pause-modal');
-    this.mainMenuModal = document.getElementById('main-menu-modal');
 
     this.initCampaignMapUI();
     this.setupEventListeners();
@@ -27,36 +27,55 @@ class UIManager {
     const grid = document.getElementById('campaign-stages-grid');
     if (!grid) return;
 
+    const unlockedLevel = window.PROGRESSION ? window.PROGRESSION.getUnlockedLevel() : 1;
     grid.innerHTML = '';
+
     for (let i = 1; i <= 20; i++) {
-      const stage = window.CAMPAIGN_STAGES[i];
-      const hero = window.HERO_DATA[stage.heroId] || window.HERO_DATA.banderita;
+      const stage = window.CAMPAIGN_STAGES ? window.CAMPAIGN_STAGES[i] : null;
+      if (!stage) continue;
+
+      const hero = window.HERO_DATA ? window.HERO_DATA[stage.heroId] : null;
       const isBoss = (i === 4 || i === 8 || i === 12 || i === 16 || i === 20);
+      const isLocked = (i > unlockedLevel);
+      const stars = window.PROGRESSION ? window.PROGRESSION.getLevelStars(i) : 0;
+      const starsDisplay = '★'.repeat(stars) + '☆'.repeat(Math.max(0, 3 - stars));
 
       const card = document.createElement('div');
-      card.className = `stage-card ${i === 1 ? 'selected' : ''} ${isBoss ? 'boss-stage' : ''}`;
+      card.className = `stage-card ${i === this.selectedStageIndex ? 'selected' : ''} ${isBoss ? 'boss-stage' : ''} ${isLocked ? 'locked-stage' : ''}`;
       card.dataset.stage = i;
       card.innerHTML = `
-        <div class="stage-num">${i}</div>
+        <div class="stage-num">${i} ${isLocked ? '🔒' : ''}</div>
         <div class="stage-details">
           <span class="stage-title">${stage.name}</span>
-          <span class="stage-hero-badge" style="color: ${hero.color}">👤 ${hero.name}</span>
+          <span class="stage-hero-badge" style="color: ${hero ? hero.color : '#ffd700'}">👤 ${hero ? hero.name : stage.heroId}</span>
           <span class="stage-quest-brief">${stage.objectiveTitle}</span>
+          <span class="stage-quota-badge">👥 ${(stage.requiredSubsQuota || 50000).toLocaleString()}</span>
+          ${stars > 0 ? `<span class="stage-stars">${starsDisplay}</span>` : ''}
         </div>
         ${isBoss ? '<span class="boss-tag">👑 BOSS</span>' : ''}
       `;
 
       card.addEventListener('click', () => {
+        if (isLocked) {
+          if (window.audio) window.audio.sfxPortalLocked();
+          if (window.particles && window.game) {
+            window.particles.addFloatingText(window.game.canvas.width / 2, 100, `🔒 المرحلة مقفلة! أنهِ مرحلة ${i - 1} أولاً`, '#ff4757', 14);
+          }
+          return;
+        }
+
         if (this.selectedStageIndex === i) {
-          // If already selected, launch it directly!
           this.launchSelectedStage();
         } else {
           this.selectStage(i);
         }
       });
+
       card.addEventListener('dblclick', () => {
-        this.selectStage(i);
-        this.launchSelectedStage();
+        if (!isLocked) {
+          this.selectStage(i);
+          this.launchSelectedStage();
+        }
       });
 
       grid.appendChild(card);
@@ -82,15 +101,21 @@ class UIManager {
         <h3>مرحلة ${stageIndex}: ${stage.name} (${stage.nameEn})</h3>
         <p class="preview-quest"><strong>المهمة:</strong> ${stage.objectiveDesc}</p>
         <p class="preview-hero"><strong>البطل المخصص:</strong> ${heroName} (${heroClass})</p>
+        <p class="preview-quota"><strong>شرط المشتركين لفتح البوابة:</strong> 👥 ${(stage.requiredSubsQuota || 50000).toLocaleString()} مشترك</p>
       `;
     }
   }
 
   launchSelectedStage() {
+    const unlockedLevel = window.PROGRESSION ? window.PROGRESSION.getUnlockedLevel() : 1;
+    if (this.selectedStageIndex > unlockedLevel) {
+      if (window.audio) window.audio.sfxPortalLocked();
+      return;
+    }
+
     try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
     const stage = window.CAMPAIGN_STAGES ? window.CAMPAIGN_STAGES[this.selectedStageIndex] : null;
 
-    // If stage is Banderita, open Weapon Selection modal first
     if (stage && stage.heroId === 'banderita') {
       this.showScreen('weaponSelect');
     } else if (window.game) {
@@ -99,20 +124,60 @@ class UIManager {
   }
 
   setupEventListeners() {
-    // Menu buttons
-    const btnStart = document.getElementById('btn-start-game');
-    if (btnStart) {
-      btnStart.addEventListener('click', (e) => {
+    // 1. Main Menu Buttons
+    const btnStartStory = document.getElementById('btn-start-story');
+    if (btnStartStory) {
+      btnStartStory.addEventListener('click', (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        try {
-          if (window.audio) {
-            window.audio.ensureContext();
-            if (window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm();
-          }
-        } catch(err) {
-          console.warn('Audio play error:', err);
-        }
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        const furthestStage = window.PROGRESSION ? window.PROGRESSION.getUnlockedLevel() : 1;
+        this.selectedStageIndex = furthestStage;
+        this.launchSelectedStage();
+      });
+    }
+
+    const btnOpenMap = document.getElementById('btn-open-map');
+    if (btnOpenMap) {
+      btnOpenMap.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initCampaignMapUI();
         this.showScreen('campaignMap');
+      });
+    }
+
+    const btnOpenLore = document.getElementById('btn-open-lore');
+    if (btnOpenLore) {
+      btnOpenLore.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('lore');
+      });
+    }
+
+    const btnCloseLore = document.getElementById('btn-close-lore');
+    if (btnCloseLore) {
+      btnCloseLore.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
+    const btnResetProgress = document.getElementById('btn-reset-progress');
+    if (btnResetProgress) {
+      btnResetProgress.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const confirmReset = (typeof window.confirm === 'function')
+          ? window.confirm('هل أنت متأكد من إعادة ضبط التقدم والبدء من المرحلة 1؟')
+          : true;
+
+        if (confirmReset) {
+          if (window.PROGRESSION) window.PROGRESSION.resetProgress();
+          this.selectedStageIndex = 1;
+          this.initCampaignMapUI();
+          if (typeof window.alert === 'function') window.alert('تم إعادة ضبط التقدم بنجاح!');
+        }
       });
     }
 
@@ -124,7 +189,7 @@ class UIManager {
       });
     }
 
-    // Banderita Weapon Choice buttons
+    // 2. Banderita Weapon Choice buttons
     const btnChooseTamees = document.getElementById('btn-weapon-tamees');
     if (btnChooseTamees) {
       btnChooseTamees.addEventListener('click', (e) => {
@@ -143,6 +208,7 @@ class UIManager {
       });
     }
 
+    // 3. Retry Button (Robust clean restart)
     const btnRetry = document.getElementById('btn-retry');
     if (btnRetry) {
       btnRetry.addEventListener('click', (e) => {
@@ -152,12 +218,41 @@ class UIManager {
       });
     }
 
+    // 4. Return to Main Menu / Map Buttons
+    const btnGameOverMenu = document.getElementById('btn-gameover-menu');
+    if (btnGameOverMenu) {
+      btnGameOverMenu.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
+    const btnVictoryMenu = document.getElementById('btn-victory-menu');
+    if (btnVictoryMenu) {
+      btnVictoryMenu.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
     const btnBackToMap = document.getElementById('btn-back-to-map');
     if (btnBackToMap) {
       btnBackToMap.addEventListener('click', (e) => {
         if (e && e.preventDefault) e.preventDefault();
         try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initCampaignMapUI();
         this.showScreen('campaignMap');
+      });
+    }
+
+    const btnMapBackToMenu = document.getElementById('btn-map-back-to-menu');
+    if (btnMapBackToMenu) {
+      btnMapBackToMenu.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
       });
     }
 
@@ -182,14 +277,14 @@ class UIManager {
     }
 
     // Touch controls
-    this.bindTouchButton('btn-touch-left', (p) => { window.game.inputs.left = p; });
-    this.bindTouchButton('btn-touch-right', (p) => { window.game.inputs.right = p; });
-    this.bindTouchButton('btn-touch-jump', (p) => { if (p) window.game.handleJumpPress(); });
-    this.bindTouchButton('btn-touch-attack', (p) => { if (p) window.game.handleAttackPress(); });
-    this.bindTouchButton('btn-touch-dash', (p) => { if (p) window.game.handleDashPress(); });
-    this.bindTouchButton('btn-touch-special', (p) => { if (p) window.game.handleSpecialPress(); });
+    this.bindTouchButton('btn-touch-left', (p) => { if (window.game) window.game.inputs.left = p; });
+    this.bindTouchButton('btn-touch-right', (p) => { if (window.game) window.game.inputs.right = p; });
+    this.bindTouchButton('btn-touch-jump', (p) => { if (p && window.game) window.game.handleJumpPress(); });
+    this.bindTouchButton('btn-touch-attack', (p) => { if (p && window.game) window.game.handleAttackPress(); });
+    this.bindTouchButton('btn-touch-dash', (p) => { if (p && window.game) window.game.handleDashPress(); });
+    this.bindTouchButton('btn-touch-special', (p) => { if (p && window.game) window.game.handleSpecialPress(); });
     this.bindTouchButton('btn-touch-switch', (p) => {
-      if (p) {
+      if (p && window.game) {
         this.selectedHeroIndex = (this.selectedHeroIndex + 1) % this.heroKeys.length;
         window.game.switchHero(this.selectedHeroIndex);
       }
@@ -216,11 +311,13 @@ class UIManager {
       else if (screenName === 'victory') window.game.state = 'victory';
       else if (screenName === 'campaignMap') window.game.state = 'campaignMap';
       else if (screenName === 'weaponSelect') window.game.state = 'weaponSelect';
+      else if (screenName === 'lore') window.game.state = 'lore';
       else if (screenName === 'menu') window.game.state = 'menu';
     }
 
     if (this.mainMenuModal) this.mainMenuModal.classList.toggle('hidden', screenName !== 'menu');
     if (this.campaignMapModal) this.campaignMapModal.classList.toggle('hidden', screenName !== 'campaignMap');
+    if (this.loreModal) this.loreModal.classList.toggle('hidden', screenName !== 'lore');
     if (this.weaponSelectModal) this.weaponSelectModal.classList.toggle('hidden', screenName !== 'weaponSelect');
     if (this.gameOverModal) this.gameOverModal.classList.toggle('hidden', screenName !== 'gameOver');
     if (this.victoryModal) this.victoryModal.classList.toggle('hidden', screenName !== 'victory');
@@ -261,7 +358,7 @@ class UIManager {
       if (energyPct >= 100) {
         energyFill.classList.add('ready');
         if (ultStatus) {
-          ultStatus.textContent = '⚡ جاهز! (L / SP)';
+          ultStatus.textContent = '⚡ جاهز! (K / ULT)';
           ultStatus.classList.add('glowing');
         }
       } else {
@@ -273,8 +370,25 @@ class UIManager {
       }
     }
 
+    // Subscriber Quota Progress HUD
     const subsEl = document.getElementById('hud-subs-counter');
-    if (subsEl && window.game) subsEl.textContent = Number(window.game.subscribers).toLocaleString();
+    const quotaEl = document.getElementById('hud-quota-status');
+    if (window.game && window.game.levelManager && window.game.levelManager.stage) {
+      const currentSubs = window.game.levelSubscribers || 0;
+      const requiredSubs = window.game.levelManager.stage.requiredSubsQuota || 50000;
+      const quotaPct = Math.min(100, Math.floor((currentSubs / requiredSubs) * 100));
+
+      if (subsEl) subsEl.textContent = `${currentSubs.toLocaleString()} / ${requiredSubs.toLocaleString()} 👥`;
+      if (quotaEl) {
+        if (currentSubs >= requiredSubs) {
+          quotaEl.textContent = '✅ شرط المشتركين مكتمل!';
+          quotaEl.className = 'quota-status completed';
+        } else {
+          quotaEl.textContent = `⏳ التقدم: ${quotaPct}%`;
+          quotaEl.className = 'quota-status';
+        }
+      }
+    }
 
     const scoreEl = document.getElementById('hud-score-counter');
     if (scoreEl && window.game) scoreEl.textContent = Number(window.game.score).toLocaleString();
@@ -305,8 +419,8 @@ class UIManager {
     if (window.audio) window.audio.sfxGameOver();
     const subStat = document.getElementById('gameover-subs');
     const scoreStat = document.getElementById('gameover-score');
-    if (subStat) subStat.textContent = Number(stats.subs).toLocaleString();
-    if (scoreStat) scoreStat.textContent = Number(stats.score).toLocaleString();
+    if (subStat) subStat.textContent = Number(stats.subs || 0).toLocaleString();
+    if (scoreStat) scoreStat.textContent = Number(stats.score || 0).toLocaleString();
     this.showScreen('gameOver');
   }
 
@@ -319,8 +433,8 @@ class UIManager {
     const heroStat = document.getElementById('victory-hero');
     const rankStat = document.getElementById('victory-rank');
 
-    if (subStat) subStat.textContent = Number(stats.subs).toLocaleString();
-    if (scoreStat) scoreStat.textContent = Number(stats.score).toLocaleString();
+    if (subStat) subStat.textContent = Number(stats.subs || 0).toLocaleString();
+    if (scoreStat) scoreStat.textContent = Number(stats.score || 0).toLocaleString();
     if (heroStat) heroStat.textContent = stats.heroName || 'أساطير اليوتيوب';
     if (rankStat) rankStat.textContent = 'S+ (أسطوري خارق)';
     this.showScreen('victory');

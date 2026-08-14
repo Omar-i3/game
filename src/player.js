@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - Hero System & Weapon Mechanics
+// Arab Gamers: The 20-Stage Pixel Campaign - Hero System, Physics & State Machine
 // ============================================================================
 
 const HERO_DATA = {
@@ -146,7 +146,7 @@ class Player {
     this.dashCooldown = 0;
     this.animFrame = 0;
     this.animTimer = 0;
-    this.state = 'idle';
+    this.state = 'idle'; // idle, walk, jump, fall, attack, hurt, special
 
     // Boomerangs & Projectiles
     this.projectiles = [];
@@ -198,6 +198,7 @@ class Player {
     this.teaParticles = [];
     this.baldBeamActive = false;
     this.jumpsLeft = this.maxJumps;
+    this.state = 'idle';
   }
 
   move(dir) {
@@ -215,16 +216,16 @@ class Player {
       this.jumpsLeft--;
 
       if (this.jumpsLeft === 1 && this.maxJumps === 3) {
-        window.audio.sfxDoubleJump();
+        if (window.audio) window.audio.sfxDoubleJump();
         window.particles.burst(this.x + this.width / 2, this.y + this.height, 8, ['#2ed573', '#ffffff'], 2, 5);
       } else if (this.jumpsLeft === 0 && this.maxJumps === 3) {
-        window.audio.sfxTripleJump();
+        if (window.audio) window.audio.sfxTripleJump();
         window.particles.burst(this.x + this.width / 2, this.y + this.height, 14, ['#ffd700', '#2ed573', '#ffffff'], 3, 7);
       } else if (this.jumpsLeft === 0 && this.maxJumps === 2) {
-        window.audio.sfxDoubleJump();
+        if (window.audio) window.audio.sfxDoubleJump();
         window.particles.burst(this.x + this.width / 2, this.y + this.height, 10, ['#2ed573', '#ffffff'], 2, 5);
       } else {
-        window.audio.sfxJump();
+        if (window.audio) window.audio.sfxJump();
         window.particles.burst(this.x + this.width / 2, this.y + this.height, 6, ['#ecf0f1', '#bdc3c7'], 1, 4);
       }
     }
@@ -237,7 +238,7 @@ class Player {
     this.invulnerableTimer = 20;
     this.vx = this.facing * 16;
     this.vy = 0;
-    window.audio.sfxDash();
+    if (window.audio) window.audio.sfxDash();
     window.particles.burst(this.x + this.width / 2, this.y + this.height / 2, 15, ['#fffa65', '#ff3838', '#ffffff'], 3, 7);
   }
 
@@ -248,10 +249,10 @@ class Player {
 
     if (this.heroId === 'banderita') {
       if (this.selectedWeapon === 'tamees') {
-        window.audio.sfxTameesSlash();
+        if (window.audio) window.audio.sfxTameesSlash();
         window.particles.burst(this.x + (this.facing > 0 ? this.width + 10 : -10), this.y + 20, 10, ['#f39c12', '#e74c3c'], 2, 5);
       } else {
-        window.audio.sfxHotPotato();
+        if (window.audio) window.audio.sfxHotPotato();
         this.projectiles.push({
           x: this.facing > 0 ? this.x + this.width : this.x - 14,
           y: this.y + 16,
@@ -265,7 +266,7 @@ class Player {
         });
       }
     } else if (this.heroId === 'mlzlz') {
-      window.audio.sfxTeaSpray();
+      if (window.audio) window.audio.sfxTeaSpray();
       for (let i = 0; i < 5; i++) {
         this.teaParticles.push({
           x: this.facing > 0 ? this.x + this.width : this.x - 10,
@@ -279,7 +280,7 @@ class Player {
         });
       }
     } else if (this.heroId === 'ocmz') {
-      window.audio.sfxHatBoomerang();
+      if (window.audio) window.audio.sfxHatBoomerang();
       this.boomerangs.push({
         x: this.x + this.width / 2,
         y: this.y + 18,
@@ -294,11 +295,11 @@ class Player {
         life: 70
       });
     } else if (this.heroId === 'abuAbed') {
-      window.audio.sfxBaldBeam();
+      if (window.audio) window.audio.sfxBaldBeam();
       this.baldBeamActive = true;
       this.baldBeamTimer = 20;
     } else if (this.heroId === 'opiilz') {
-      window.audio.sfxScrewdriverZap();
+      if (window.audio) window.audio.sfxScrewdriverZap();
       window.particles.burst(this.x + (this.facing > 0 ? this.width + 12 : -12), this.y + 18, 8, ['#9b59b6', '#00d2d3', '#ffffff'], 2, 5);
     }
   }
@@ -315,13 +316,13 @@ class Player {
     switch (this.heroId) {
       case 'banderita':
         this.specialTimer = 45;
-        window.audio.sfxPotatoRage();
+        if (window.audio) window.audio.sfxPotatoRage();
         window.particles.potatoRageBlast(this.x + this.width / 2, this.y + this.height / 2);
         break;
 
       case 'mlzlz':
         this.specialTimer = 60;
-        window.audio.sfxHorrorGhost();
+        if (window.audio) window.audio.sfxHorrorGhost();
         window.particles.horrorFlash(this.x + this.width / 2, this.y + this.height / 2);
         for (let i = 0; i < 5; i++) {
           this.activeGhosts.push({
@@ -337,7 +338,7 @@ class Player {
 
       case 'ocmz':
         this.specialTimer = 70;
-        window.audio.sfxBlockDrop();
+        if (window.audio) window.audio.sfxBlockDrop();
         for (let i = 0; i < 10; i++) {
           this.fallingBlocks.push({
             x: this.x - 220 + i * 55 + (Math.random() - 0.5) * 30,
@@ -352,7 +353,7 @@ class Player {
 
       case 'abuAbed':
         this.specialTimer = 30;
-        window.audio.sfxTurretDeploy();
+        if (window.audio) window.audio.sfxTurretDeploy();
         this.turrets.push({
           x: this.x + (this.facing * 40),
           y: this.y + 10,
@@ -365,7 +366,7 @@ class Player {
 
       case 'opiilz':
         this.specialTimer = 55;
-        window.audio.sfxNeonDash();
+        if (window.audio) window.audio.sfxNeonDash();
         this.vx = this.facing * 15;
         this.vy = 0;
         break;
@@ -386,7 +387,7 @@ class Player {
     this.vx = knockbackDir * 5;
     this.vy = -4;
 
-    window.audio.sfxPlayerHurt();
+    if (window.audio) window.audio.sfxPlayerHurt();
     window.particles.burst(this.x + this.width / 2, this.y + this.height / 2, 14, ['#ff4757', '#ff6b81'], 2, 6);
     window.particles.addFloatingText(this.x + this.width / 2, this.y - 10, `-${actualDamage}`, '#ff4757', 15);
 
@@ -406,7 +407,7 @@ class Player {
     this.hp = Math.min(this.maxHp, this.hp + amount);
     const restored = this.hp - prev;
     if (restored > 0) {
-      window.audio.sfxHealth();
+      if (window.audio) window.audio.sfxHealth();
       window.particles.burst(this.x + this.width / 2, this.y + this.height / 2, 10, ['#2ed573', '#7bed9f'], 1, 4);
       window.particles.addFloatingText(this.x + this.width / 2, this.y - 10, `+${restored} HP`, '#2ed573', 14, '❤️');
     }
@@ -457,16 +458,19 @@ class Player {
       if (this.baldBeamTimer <= 0) this.baldBeamActive = false;
     }
 
+    // Animation Tick Frame calculation
     this.animTimer++;
-    if (this.animTimer >= 6) {
+    if (this.animTimer >= 7) {
       this.animTimer = 0;
       this.animFrame = (this.animFrame + 1) % 4;
     }
 
-    if (this.isSpecialActive) this.state = 'special';
+    // State Machine
+    if (this.invulnerableTimer > 35) this.state = 'hurt';
+    else if (this.isSpecialActive) this.state = 'special';
     else if (this.isAttacking) this.state = 'attack';
     else if (!this.isGrounded) this.state = this.vy < 0 ? 'jump' : 'fall';
-    else if (Math.abs(this.vx) > 0.5) this.state = 'run';
+    else if (Math.abs(this.vx) > 0.5) this.state = 'walk';
     else this.state = 'idle';
 
     // 1. Hot Potato Projectiles
@@ -498,7 +502,7 @@ class Player {
       }
 
       if (hit || proj.life <= 0) {
-        window.audio.sfxExplosion();
+        if (window.audio) window.audio.sfxExplosion();
         window.particles.burst(proj.x, proj.y, 12, ['#f5b041', '#ff4757', '#ffffff'], 2, 6);
         this.projectiles.splice(i, 1);
       }
@@ -626,7 +630,7 @@ class Player {
         }
         if (target) {
           turret.shootCooldown = 26;
-          window.audio.playTone(980, 'sawtooth', 0.1, 0.2, 0.01, 200);
+          if (window.audio) window.audio.playTone(980, 'sawtooth', 0.08, 0.2, 0.01, 200);
           const angle = Math.atan2((target.y + target.height / 2) - turret.y, (target.x + target.width / 2) - turret.x);
           this.projectiles.push({
             x: turret.x,
@@ -703,7 +707,7 @@ class Player {
   }
 
   // --------------------------------------------------------------------------
-  // Dynamic Sprite Sheet & Procedural Renderer
+  // Crisp Pixel-Art Character & Sprite Renderer
   // --------------------------------------------------------------------------
   draw(ctx, cameraX = 0, cameraY = 0) {
     const px = Math.round(this.x - cameraX);
@@ -769,7 +773,7 @@ class Player {
     ctx.translate(px + this.width / 2, py + this.height / 2);
     ctx.scale(this.facing, 1);
 
-    // Check if custom transparent sprite images are available from assets
+    // Retrieve custom transparent sprite images
     const heroKey = this.heroId;
     const walkImg = window.assets ? window.assets.getImage(`${heroKey}_walk`) : null;
     const idleImg = window.assets ? window.assets.getImage(`${heroKey}_idle`) : null;
@@ -790,7 +794,7 @@ class Player {
       ctx.drawImage(attackImg, fIdx * fw, 0, fw, fh, -dw / 2, -dh / 2, dw, dh);
       spriteRendered = true;
 
-    } else if (this.state === 'run' && walkImg && walkImg.complete) {
+    } else if (this.state === 'walk' && walkImg && walkImg.complete) {
       // 4-frame walk strip
       const fIdx = this.animFrame % 4;
       const fw = walkImg.width / 4;
@@ -811,10 +815,10 @@ class Player {
       spriteRendered = true;
     }
 
-    // Procedural Fallback if sprite not loaded
+    // Procedural Fallback if sprite is loading
     if (!spriteRendered) {
-      const bob = (this.state === 'run') ? Math.sin(this.animFrame * Math.PI / 2) * 3 : 0;
-      const legOffset = (this.state === 'run') ? (this.animFrame % 2 === 0 ? 4 : -4) : 0;
+      const bob = (this.state === 'walk') ? Math.sin(this.animFrame * Math.PI / 2) * 3 : 0;
+      const legOffset = (this.state === 'walk') ? (this.animFrame % 2 === 0 ? 4 : -4) : 0;
 
       switch (this.heroId) {
         case 'banderita': this.drawBanderita(ctx, bob, legOffset); break;
@@ -850,7 +854,7 @@ class Player {
     if (this.selectedWeapon === 'tamees') {
       ctx.fillStyle = '#f5cd79';
       ctx.beginPath();
-      ctx.ellipse(14, 0 + bob, 12, 6, 0.3, 0, Math.PI * 2);
+      ctx.arc(14, 0 + bob, 8, 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.fillStyle = '#f5b041';

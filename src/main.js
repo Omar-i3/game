@@ -17,9 +17,10 @@ class Game {
     this.shakeIntensity = 0;
     this.shakeDecay = 0.9;
 
-    this.state = 'menu'; // menu, campaignMap, weaponSelect, dialogue, playing, paused, gameover, victory
+    this.state = 'menu'; // menu, campaignMap, lore, weaponSelect, dialogue, playing, paused, gameover, victory
     this.score = 0;
-    this.subscribers = 1000;
+    this.totalSubscribers = 1000;
+    this.levelSubscribers = 0;
     this.combo = 0;
     this.comboTimer = 0;
 
@@ -35,7 +36,31 @@ class Game {
     this.inputs = { left: false, right: false, up: false, down: false, jump: false, attack: false, special: false };
 
     this.setupKeyboardListeners();
+    this.setupResizeHandler();
     this.startLoop();
+  }
+
+  setupResizeHandler() {
+    const resize = () => {
+      const container = document.getElementById('game-viewport-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const targetAspect = 16 / 9;
+      let w = rect.width;
+      let h = rect.height;
+
+      if (w / h > targetAspect) {
+        w = h * targetAspect;
+      } else {
+        h = w / targetAspect;
+      }
+
+      this.canvas.style.width = `${Math.floor(w)}px`;
+      this.canvas.style.height = `${Math.floor(h)}px`;
+    };
+
+    window.addEventListener('resize', resize);
+    resize();
   }
 
   setupKeyboardListeners() {
@@ -46,7 +71,7 @@ class Game {
       switch (e.code) {
         case 'KeyA': case 'ArrowLeft': this.inputs.left = true; break;
         case 'KeyD': case 'ArrowRight': this.inputs.right = true; break;
-        case 'KeyW': case 'ArrowUp': case 'KeyK': case 'Space':
+        case 'KeyW': case 'ArrowUp': case 'Space':
           this.inputs.jump = true;
           this.handleJumpPress();
           break;
@@ -56,7 +81,7 @@ class Game {
           this.inputs.attack = true;
           this.handleAttackPress();
           break;
-        case 'KeyL': case 'KeyX':
+        case 'KeyK': case 'KeyL': case 'KeyX':
           this.inputs.special = true;
           this.handleSpecialPress();
           break;
@@ -78,10 +103,10 @@ class Game {
       switch (e.code) {
         case 'KeyA': case 'ArrowLeft': this.inputs.left = false; break;
         case 'KeyD': case 'ArrowRight': this.inputs.right = false; break;
-        case 'KeyW': case 'ArrowUp': case 'KeyK': case 'Space': this.inputs.jump = false; break;
+        case 'KeyW': case 'ArrowUp': case 'Space': this.inputs.jump = false; break;
         case 'KeyS': case 'ArrowDown': this.inputs.down = false; break;
         case 'KeyJ': case 'KeyZ': this.inputs.attack = false; break;
-        case 'KeyL': case 'KeyX': this.inputs.special = false; break;
+        case 'KeyK': case 'KeyL': case 'KeyX': this.inputs.special = false; break;
       }
     });
   }
@@ -126,6 +151,9 @@ class Game {
 
   startStage(stageIndex, heroId = 'banderita', weaponChoice = null) {
     this.enemyProjectiles = [];
+    this.levelSubscribers = 0;
+    this.combo = 0;
+    this.comboTimer = 0;
     window.particles.reset();
 
     this.player.setHero(heroId, weaponChoice);
@@ -151,10 +179,18 @@ class Game {
   completeStage() {
     const currentIdx = this.levelManager.currentStageIndex;
 
+    // Unlock next level in localStorage
+    if (window.PROGRESSION) {
+      window.PROGRESSION.unlockNextLevel(currentIdx);
+      window.PROGRESSION.saveLevelStats(currentIdx, 3, this.score);
+    }
+
+    if (window.audio) window.audio.sfxLevelClear();
+
     // Trigger Outro Dialogue
     this.dialogue.startDialogue(currentIdx, 'outro', () => {
-      this.addScore(500);
-      this.addSubscribers(500);
+      this.addScore(1000);
+      this.totalSubscribers += this.levelSubscribers;
 
       const nextStage = currentIdx + 1;
       if (nextStage <= 20) {
@@ -166,10 +202,10 @@ class Game {
           this.startStage(nextStage, nextData.heroId);
         }
       } else {
-        // Victory! Finished all 20 stages!
+        // Grand Victory
         this.state = 'victory';
         this.ui.showVictory({
-          subs: this.subscribers,
+          subs: this.totalSubscribers,
           score: this.score,
           heroName: 'أساطير اليوتيوب العرب'
         });
@@ -183,7 +219,8 @@ class Game {
   }
 
   addSubscribers(count) {
-    this.subscribers += count;
+    this.levelSubscribers += count;
+    this.addScore(Math.floor(count / 100));
   }
 
   addScreenShake(intensity) {
@@ -229,7 +266,7 @@ class Game {
 
       if (enemy.isDead) {
         this.addScore(enemy.scoreReward);
-        this.addSubscribers(enemy.subsReward);
+        this.addSubscribers(enemy.subsReward || 500);
         this.player.addEnergy(15);
         this.combo++;
         this.comboTimer = 90;
@@ -316,12 +353,25 @@ class Game {
       if (this.comboTimer <= 0) this.combo = 0;
     }
 
-    // Check Exit Portal
-    if (this.levelManager.portal && this.objectives.isCompleted) {
+    // Check Exit Portal & Subscriber Quota
+    if (this.levelManager.portal) {
       const port = this.levelManager.portal;
       if (this.player.x + this.player.width > port.x && this.player.x < port.x + port.w &&
           this.player.y + this.player.height > port.y && this.player.y < port.y + port.h) {
-        this.completeStage();
+
+        const isQuestDone = this.objectives.isCompleted;
+        const requiredSubs = this.levelManager.stage.requiredSubsQuota || 50000;
+        const hasEnoughSubs = this.levelSubscribers >= requiredSubs;
+
+        if (!isQuestDone) {
+          window.particles.addFloatingText(this.player.x + this.player.width / 2, this.player.y - 20, '⚠️ لم تكتمل المهمة المطلوبة بعد!', '#ff4757', 14);
+          if (window.audio) window.audio.sfxPortalLocked();
+        } else if (!hasEnoughSubs) {
+          window.particles.addFloatingText(this.player.x + this.player.width / 2, this.player.y - 20, `⚠️ المشتركين غير كافيين! (${this.levelSubscribers.toLocaleString()} / ${requiredSubs.toLocaleString()})`, '#ff4757', 14);
+          if (window.audio) window.audio.sfxPortalLocked();
+        } else {
+          this.completeStage();
+        }
       }
     }
 
@@ -331,10 +381,10 @@ class Game {
 
     if (this.player.hp <= 0) {
       this.state = 'gameover';
-      this.ui.showGameOver({ subs: this.subscribers, score: this.score });
+      this.ui.showGameOver({ subs: this.levelSubscribers, score: this.score });
     }
 
-    // Camera
+    // Camera scrolling (supports wide 5000px stages)
     const targetCamX = this.player.x - this.width / 2 + this.player.width / 2;
     const maxCamX = Math.max(0, this.levelManager.stage.width - this.width);
     this.cameraX += (Math.max(0, Math.min(maxCamX, targetCamX)) - this.cameraX) * 0.1;
@@ -367,8 +417,8 @@ class Game {
     if (this.levelManager.boss) this.levelManager.boss.draw(this.ctx, this.cameraX, this.cameraY);
 
     for (const proj of this.enemyProjectiles) {
-      const prx = Math.round(proj.x - this.cameraX);
-      const pry = Math.round(proj.y - this.cameraY);
+      const prx = Math.round(proj.x - cameraX);
+      const pry = Math.round(proj.y - cameraY);
       this.ctx.save();
       this.ctx.fillStyle = proj.color;
       this.ctx.beginPath();

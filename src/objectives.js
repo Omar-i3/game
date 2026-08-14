@@ -1,58 +1,58 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - Objective & Quest Engine
+// Arab Gamers: The 20-Stage Pixel Campaign - Dynamic Objective & Quest Engine
 // ============================================================================
 
 class ObjectiveEngine {
   constructor() {
-    this.currentQuest = null;
+    this.stage = null;
+    this.type = null;
+    this.title = '';
+    this.description = '';
+    this.target = 0;
+    this.current = 0;
+    this.timeLimit = 0;
+    this.timeRemaining = 0;
     this.isCompleted = false;
-    this.timer = 0;
-    this.currentCount = 0;
-    this.targetCount = 0;
-    this.hudQuestTitle = document.getElementById('hud-quest-title');
-    this.hudQuestDesc = document.getElementById('hud-quest-desc');
-    this.hudQuestProgress = document.getElementById('hud-quest-progress');
-    this.hudQuestBox = document.getElementById('hud-quest-box');
+    this.isFailed = false;
+
+    this.hudBox = document.getElementById('hud-quest-box');
+    this.hudTitle = document.getElementById('hud-quest-title');
+    this.hudDesc = document.getElementById('hud-quest-desc');
+    this.hudProgress = document.getElementById('hud-quest-progress');
   }
 
-  initStageObjective(stageData) {
+  initObjective(stageData) {
+    this.stage = stageData;
+    this.type = stageData.objectiveType || 'COLLECT';
+    this.title = stageData.objectiveTitle || 'المهمة';
+    this.description = stageData.objectiveDesc || '';
+    this.target = stageData.objectiveTarget || 1;
+    this.current = 0;
     this.isCompleted = false;
-    this.currentQuest = {
-      type: stageData.objectiveType || 'REACH_EXIT', // COLLECT, KILL_COUNT, SURVIVE_TIMER, SPEEDRUN_TIMER, PUZZLE_TRIGGER, BOSS_DEFEAT
-      title: stageData.objectiveTitle || 'الوصول للنهاية',
-      desc: stageData.objectiveDesc || 'اعبر المسار إلى بوابة الخروج',
-      target: stageData.objectiveTarget || 1,
-      timeLimit: stageData.objectiveTimeLimit || 0
-    };
+    this.isFailed = false;
 
-    this.targetCount = this.currentQuest.target;
-    this.currentCount = 0;
-
-    if (this.currentQuest.type === 'SPEEDRUN_TIMER' || this.currentQuest.type === 'SURVIVE_TIMER') {
-      this.timer = this.currentQuest.timeLimit * 60; // 60 frames per sec
-    } else {
-      this.timer = 0;
+    if (this.type === 'SURVIVE_TIMER' || this.type === 'SPEEDRUN_TIMER') {
+      this.timeLimit = stageData.objectiveTimeLimit || 60;
+      this.timeRemaining = this.timeLimit * 60; // In ticks (60fps)
     }
 
     this.updateHUD();
   }
 
-  recordItemCollected(itemType) {
-    if (this.isCompleted) return;
-    if (this.currentQuest.type === 'COLLECT') {
-      this.currentCount++;
-      if (this.currentCount >= this.targetCount) {
+  recordCollect(itemType) {
+    if (this.type === 'COLLECT') {
+      this.current++;
+      if (this.current >= this.target) {
         this.completeObjective();
       }
       this.updateHUD();
     }
   }
 
-  recordEnemyKilled(enemyType) {
-    if (this.isCompleted) return;
-    if (this.currentQuest.type === 'KILL_COUNT') {
-      this.currentCount++;
-      if (this.currentCount >= this.targetCount) {
+  recordKill() {
+    if (this.type === 'KILL_COUNT') {
+      this.current++;
+      if (this.current >= this.target) {
         this.completeObjective();
       }
       this.updateHUD();
@@ -60,20 +60,17 @@ class ObjectiveEngine {
   }
 
   recordPuzzleTrigger(triggerId) {
-    if (this.isCompleted) return;
-    if (this.currentQuest.type === 'PUZZLE_TRIGGER') {
-      this.currentCount++;
-      if (this.currentCount >= this.targetCount) {
+    if (this.type === 'PUZZLE_TRIGGER') {
+      this.current++;
+      if (this.current >= this.target) {
         this.completeObjective();
       }
       this.updateHUD();
     }
   }
 
-  recordBossDefeated() {
-    if (this.isCompleted) return;
-    if (this.currentQuest.type === 'BOSS_DEFEAT') {
-      this.currentCount = 1;
+  recordBossDefeat() {
+    if (this.type === 'BOSS_DEFEAT') {
       this.completeObjective();
       this.updateHUD();
     }
@@ -82,65 +79,60 @@ class ObjectiveEngine {
   completeObjective() {
     if (this.isCompleted) return;
     this.isCompleted = true;
-    if (window.audio) window.audio.sfxLevelClear();
-    if (window.particles && window.game && window.game.player) {
-      window.particles.burst(window.game.player.x + 20, window.game.player.y, 25, ['#ffd700', '#2ecc71', '#ffffff'], 3, 8);
-      window.particles.addFloatingText(window.game.player.x + 20, window.game.player.y - 30, 'تم إنجاز المهمة! البوابة مفتوحة!', '#2ecc71', 16, '✅');
+    if (window.audio) window.audio.sfxPortalOpen();
+    if (window.particles) {
+      window.particles.addFloatingText(window.game.canvas.width / 2, 120, '✅ اكتملت المهمة! اتجه نحو البوابة!', '#2ed573', 18);
     }
-    this.updateHUD();
   }
 
   update(player) {
-    if (!this.currentQuest) return;
+    if (this.isCompleted || this.isFailed) return;
 
-    // Timer modes
-    if (this.currentQuest.type === 'SPEEDRUN_TIMER') {
-      if (!this.isCompleted) {
-        this.timer--;
-        if (this.timer <= 0) {
-          // Failed speedrun!
-          this.timer = 0;
-          if (player) player.takeDamage(999);
-        }
+    if (this.type === 'SURVIVE_TIMER') {
+      this.timeRemaining--;
+      if (this.timeRemaining <= 0) {
+        this.completeObjective();
       }
       this.updateHUD();
-    } else if (this.currentQuest.type === 'SURVIVE_TIMER') {
-      if (!this.isCompleted) {
-        this.timer--;
-        this.currentCount = Math.floor((this.currentQuest.timeLimit * 60 - this.timer) / 60);
-        if (this.timer <= 0) {
-          this.timer = 0;
-          this.completeObjective();
-        }
+    } else if (this.type === 'SPEEDRUN_TIMER') {
+      this.timeRemaining--;
+      if (this.timeRemaining <= 0) {
+        this.isFailed = true;
+        if (player) player.takeDamage(999);
       }
       this.updateHUD();
     }
   }
 
   updateHUD() {
-    if (!this.currentQuest) return;
+    if (!this.hudBox) {
+      this.hudBox = document.getElementById('hud-quest-box');
+      this.hudTitle = document.getElementById('hud-quest-title');
+      this.hudDesc = document.getElementById('hud-quest-desc');
+      this.hudProgress = document.getElementById('hud-quest-progress');
+    }
 
-    if (this.hudQuestTitle) this.hudQuestTitle.textContent = this.currentQuest.title;
-    if (this.hudQuestDesc) this.hudQuestDesc.textContent = this.currentQuest.desc;
+    if (this.hudTitle) this.hudTitle.textContent = this.title;
+    if (this.hudDesc) this.hudDesc.textContent = this.description;
 
-    if (this.hudQuestProgress) {
+    if (this.hudProgress) {
       if (this.isCompleted) {
-        this.hudQuestProgress.textContent = '✅ مكتمل!';
-        this.hudQuestProgress.className = 'quest-progress completed';
-      } else if (this.currentQuest.type === 'SPEEDRUN_TIMER') {
-        const secsLeft = Math.ceil(this.timer / 60);
-        this.hudQuestProgress.textContent = `⏱️ متبقي: ${secsLeft} ثانية`;
-        this.hudQuestProgress.className = (secsLeft <= 10) ? 'quest-progress urgent' : 'quest-progress';
-      } else if (this.currentQuest.type === 'SURVIVE_TIMER') {
-        const secsLeft = Math.ceil(this.timer / 60);
-        this.hudQuestProgress.textContent = `🛡️ اصمد: ${secsLeft} ثانية`;
-        this.hudQuestProgress.className = 'quest-progress';
-      } else if (this.currentQuest.type === 'BOSS_DEFEAT') {
-        this.hudQuestProgress.textContent = '☠️ اهزم الزعيم!';
-        this.hudQuestProgress.className = 'quest-progress boss';
+        this.hudProgress.textContent = '✅ اكتملت المهمة (توجه للبوابة)';
+        this.hudProgress.className = 'quest-progress completed';
+      } else if (this.type === 'SURVIVE_TIMER') {
+        const secs = Math.ceil(this.timeRemaining / 60);
+        this.hudProgress.textContent = `⏱ صمود متبقي: ${secs} ثانية`;
+        this.hudProgress.className = secs <= 10 ? 'quest-progress urgent' : 'quest-progress';
+      } else if (this.type === 'SPEEDRUN_TIMER') {
+        const secs = Math.ceil(this.timeRemaining / 60);
+        this.hudProgress.textContent = `⚡ وقت متبقي: ${secs} ثانية`;
+        this.hudProgress.className = secs <= 10 ? 'quest-progress urgent' : 'quest-progress';
+      } else if (this.type === 'BOSS_DEFEAT') {
+        this.hudProgress.textContent = '⚔️ اسحق الزعيم!';
+        this.hudProgress.className = 'quest-progress';
       } else {
-        this.hudQuestProgress.textContent = `التقدم: ${this.currentCount} / ${this.targetCount}`;
-        this.hudQuestProgress.className = 'quest-progress';
+        this.hudProgress.textContent = `التقدم: ${this.current} / ${this.target}`;
+        this.hudProgress.className = 'quest-progress';
       }
     }
   }

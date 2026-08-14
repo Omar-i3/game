@@ -6,20 +6,20 @@ const STAGE_DIALOGUES = {
   1: {
     intro: [
       { speaker: 'banderita', name: 'بندريتا', text: 'ما هذا الإنذار؟! عداد المشتركين يتناقص بالملايين في ثوانٍ معدودة!' },
-      { speaker: 'banderita', name: 'بندريتا', text: 'يبدو أن فيروسات الخوارزمية المظلمة بدأت هجومها الشامل على يوتيوب سيتي!' },
-      { speaker: 'banderita', name: 'بندريتا', text: 'عليّ جمع 15 كيس بطاطس ذهبي لشحن طاقتي النارية وفتح بوابة الخروج!' }
+      { speaker: 'banderita', name: 'بندريتا', text: 'يبدو أن فيروسات الخوارزمية المظلمة بدأت هجومها الشامل على قنواتنا!' },
+      { speaker: 'banderita', name: 'بندريتا', text: 'عليّ جمع 15 كيس بطاطس ذهبي و50,000 مشترك لشحن طاقتي النارية وفتح البوابة!' }
     ],
     outro: [
-      { speaker: 'banderita', name: 'بندريتا', text: 'كفووو! تم شحن الطاقة بالكامل، والآن سأنطلق بأقصى سرعة نحو السيرفرات!' }
+      { speaker: 'banderita', name: 'بندريتا', text: 'كفووو! تم شحن الطاقة واستعادة 50,000 مشترك! والآن سأنطلق بأقصى سرعة نحو السيرفرات!' }
     ]
   },
   2: {
     intro: [
-      { speaker: 'banderita', name: 'بندريتا', text: 'جدران الحماية النارية واللاغ يغلقون الممرات! إذا لم أصل في أقل من 45 ثانية سأُحظر!' },
+      { speaker: 'banderita', name: 'بندريتا', text: 'جدران الحماية النارية واللاغ يغلقون الممرات! إذا لم أصل في أقل من 55 ثانية سأُحظر!' },
       { speaker: 'banderita', name: 'بندريتا', text: 'حان وقت تفعيل وميض السرعة الخارقة (Flash Dash)! يا رب ما أعلق!' }
     ],
     outro: [
-      { speaker: 'banderita', name: 'بندريتا', text: 'يسسس! تجاوزت الجدار قبل إغلاق السيرفر! لا يوجد لاغ يستطيع إيقافي!' }
+      { speaker: 'banderita', name: 'بندريتا', text: 'يسسس! تجاوزت الجدار قبل إغلاق السيرفر واستعدنا 60,000 مشترك إضافي!' }
     ]
   },
   3: {
@@ -28,7 +28,7 @@ const STAGE_DIALOGUES = {
       { speaker: 'banderita', name: 'بندريتا', text: 'سأقضي على 12 روبوت جليتش معتدين وأستعيد أفران التميس فوراً!' }
     ],
     outro: [
-      { speaker: 'banderita', name: 'بندريتا', text: 'تم تنظيف المخبز بالكامل! والآن باتجاه برج البث المركزي!' }
+      { speaker: 'banderita', name: 'بندريتا', text: 'تم تنظيف المخبز بالكامل! والآن باتجاه برج البث المركزي لمواجهة وحش اللاغ!' }
     ]
   },
   4: {
@@ -248,6 +248,22 @@ class DialogueManager {
     }
 
     this.currentDialogueQueue = stageData[type];
+    this.currentIndex = 0;
+    this.onCompleteCallback = onComplete;
+
+    if (this.modal) this.modal.classList.remove('hidden');
+    if (window.game) window.game.state = 'dialogue';
+
+    this.showCurrentLine();
+  }
+
+  startCustomDialogue(lines, onComplete = null) {
+    if (!lines || lines.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    this.currentDialogueQueue = lines;
     this.currentIndex = 0;
     this.onCompleteCallback = onComplete;
 

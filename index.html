@@ -26,7 +26,7 @@
         <h1 class="main-title">أساطير اليوتيوب <span class="en-sub">DARK ALGORITHM WAR</span></h1>
       </div>
       <div class="header-controls">
-        <button id="btn-toggle-sound" class="btn-retro-mini" aria-label="Toggle Sound">🔊 الصوت: يعمل</button>
+        <button id="btn-toggle-sound" class="btn-retro-mini" aria-label="Toggle SFX">🔊 المؤثرات: تعمل</button>
       </div>
     </header>
 
@@ -76,12 +76,13 @@
             <div id="hud-quest-progress" class="quest-progress">التقدم: 0 / 15</div>
           </div>
 
-          <!-- Subs Counter -->
+          <!-- Subs Quota Counter -->
           <div class="hud-stat-box">
-            <span class="stat-icon">▶</span>
+            <span class="stat-icon">👥</span>
             <div class="stat-val-group">
-              <span class="stat-title">المشتركون</span>
-              <span id="hud-subs-counter" class="stat-number">1,000</span>
+              <span class="stat-title">المشتركون (المطلوب)</span>
+              <span id="hud-subs-counter" class="stat-number">0 / 50,000</span>
+              <span id="hud-quota-status" class="quota-status">⏳ التقدم: 0%</span>
             </div>
           </div>
         </div>
@@ -95,6 +96,16 @@
           <div class="boss-bar-track">
             <div id="boss-hp-fill" class="boss-hp-fill" style="width: 100%"></div>
           </div>
+        </div>
+
+        <!-- Desktop Controls Hints Bar -->
+        <div class="desktop-controls-hints">
+          <span class="key-hint"><kbd>A</kbd><kbd>D</kbd> الحركة</span>
+          <span class="key-hint"><kbd>W</kbd>/<kbd>Space</kbd> القفز</span>
+          <span class="key-hint"><kbd>Shift</kbd> وميض Dash</span>
+          <span class="key-hint"><kbd>J</kbd> هجوم</span>
+          <span class="key-hint"><kbd>K</kbd> المهارة الخارقة</span>
+          <span class="key-hint"><kbd>1-5</kbd> تبديل البطل</span>
         </div>
       </div>
 
@@ -112,19 +123,56 @@
           <h3 class="menu-game-subtitle">أساطير اليوتيوب: حرب الخوارزمية المظلمة</h3>
           <p class="menu-tagline">20 مرحلة ملحمية، حوارات قصصية مشوقة، وأسلحة فريدة في مواجهة Error 404!</p>
 
-          <div class="menu-actions">
-            <button id="btn-start-game" class="btn-retro btn-primary-start">
-              <span class="btn-icon">⚡</span> خريطة الحملة | CAMPAIGN MAP (20 STAGES)
+          <div class="menu-actions-grid">
+            <button id="btn-start-story" class="btn-retro btn-primary-start">
+              <span class="btn-icon">⚡</span> بدء المغامرة (START STORY)
+            </button>
+            <button id="btn-open-map" class="btn-retro btn-map-select">
+              <span class="btn-icon">🗺️</span> اختيار المراحل (STAGE SELECT)
+            </button>
+            <button id="btn-open-lore" class="btn-retro btn-lore-open">
+              <span class="btn-icon">📖</span> شرح اللعبة والقصة (HOW TO PLAY & LORE)
+            </button>
+            <button id="btn-reset-progress" class="btn-retro btn-reset-prog">
+              <span class="btn-icon">🔄</span> إعادة ضبط التقدم (RESET)
             </button>
           </div>
+        </div>
+      </section>
 
-          <div class="controls-guide-strip">
-            <div class="guide-item"><span>A / D / ◄ ►</span> الحركة</div>
-            <div class="guide-item"><span>W / Space / K</span> القفز (Triple Jump)</div>
-            <div class="guide-item"><span>Shift</span> وميض السرعة (Dash)</div>
-            <div class="guide-item"><span>J / Z</span> السلاح الرئيسي</div>
-            <div class="guide-item"><span>L / X</span> المهارة الخارقة (ULT)</div>
-            <div class="guide-item"><span>1 - 5</span> تبديل اليوتيوبر</div>
+      <!-- Lore & How to Play Modal -->
+      <section id="lore-modal" class="screen-modal lore-screen hidden" aria-label="Game Lore and Guide">
+        <div class="lore-card">
+          <h2 class="screen-title">📖 قصة اللعبة والشخصيات والتحكم</h2>
+          <div class="lore-scroll-body">
+            <div class="lore-section">
+              <h3>🌟 القصة والمهمة:</h3>
+              <p>شنت فيروسات <strong>الخوارزمية المظلمة (Error 404)</strong> هجوماً شاملاً على منصة اليوتيوب واختطفت ملايين المتابعين والمشتركين! انطلق مع أساطير الجيمنج العرب لجمع المشتركين، حل الألغاز، وسحق زعماء الخوارزمية لفتح بوابة النصر في كل مرحلة!</p>
+              <div class="lore-quota-callout">
+                <strong>⚠️ شرط المشتركين لفتح البوابة:</strong> في كل مرحلة، يجب عليك جمع الحد الأدنى المطلوب من المشتركين (50,000+ مشترك) بالإضافة لإنجاز المهمة المطلوبة لفتح بوابة العبور للمرحلة التالية!
+              </div>
+            </div>
+
+            <div class="lore-section">
+              <h3>🦸‍♂️ أسلحة وقدرات الأبطال:</h3>
+              <ul class="hero-lore-list">
+                <li><strong style="color: #ff3838">بندريتا:</strong> اختيار السلاح (التميس الناري / البطاطس الحارقة) + وميض السرعة الخارق (Dash عبر Shift) + إعصار الغضب الناري.</li>
+                <li><strong style="color: #00d2d3">ملزلز:</strong> كاسة الشاي الساخن لإذابة الأشباح وكشف الممرات السرية + الهدوء التكتيكي + فلاش الرعب وعاصفة الشاي.</li>
+                <li><strong style="color: #2ed573">أوسمز:</strong> قبعة القش كبوميرانج قاطع + القفز الثلاثي والانزلاق + إمطار البلوكات المتفجرة.</li>
+                <li><strong style="color: #ffa502">أبو عابد:</strong> شعاع الصلعة الذهبية العاكس للمرايا + درع الورشة الخارق (50% تخفيض ضرر) + برج الريدستون الآلي.</li>
+                <li><strong style="color: #9b59b6">أوبلز:</strong> المفك الأسطوري وتفكيك الأجهزة + تعطيل أفخاخ الليزر تلقائياً + اندفاع لوح النيون النفاث.</li>
+              </ul>
+            </div>
+
+            <div class="lore-section">
+              <h3>🎮 أزرار التحكم:</h3>
+              <p><strong>الكمبيوتر:</strong> A / D للحركة • W أو المسافة للقفز • Shift للـ Dash • J للهجوم بالسلاح • K للمهارة الخارقة (ULT) • 1-5 لتبديل البطل.</p>
+              <p><strong>الهواتف:</strong> أزرار التحكم باللمس المدمجة أسفل الشاشة.</p>
+            </div>
+          </div>
+
+          <div class="lore-footer">
+            <button id="btn-close-lore" class="btn-retro btn-primary">العودة للقائمة الرئيسية</button>
           </div>
         </div>
       </section>
@@ -132,8 +180,11 @@
       <!-- 20-Stage Campaign Map Modal -->
       <section id="campaign-map-modal" class="screen-modal campaign-map-screen hidden" aria-label="Campaign Map">
         <div class="campaign-map-card">
-          <h2 class="screen-title">🗺️ خريطة المراحل الـ 20 | CAMPAIGN MAP</h2>
-          <p class="screen-subtitle">اختر المرحلة المطلوبة لخوض مغامرة البطل والمهام الخاصة بها</p>
+          <div class="map-header-row">
+            <h2 class="screen-title">🗺️ خريطة المراحل الـ 20 | CAMPAIGN MAP</h2>
+            <button id="btn-map-back-to-menu" class="btn-retro-mini">القائمة الرئيسية</button>
+          </div>
+          <p class="screen-subtitle">المراحل مقفلة بنظام التتابع 🔒 • أنهِ المرحلة الحالية لفتح التالية!</p>
 
           <div id="campaign-stages-grid" class="campaign-stages-grid">
             <!-- Dynamically populated from JS -->
@@ -143,6 +194,7 @@
             <h3>مرحلة 1: شرارة الصدمة</h3>
             <p class="preview-quest"><strong>المهمة:</strong> اجمع 15 كيس بطاطس ذهبي لشحن الطاقة</p>
             <p class="preview-hero"><strong>البطل المخصص:</strong> بندريتا (BanderitaX)</p>
+            <p class="preview-quota"><strong>شرط المشتركين لفتح البوابة:</strong> 👥 50,000 مشترك</p>
           </div>
 
           <div class="campaign-map-footer">
@@ -200,7 +252,7 @@
           <h2 class="pause-title">⏸ اللعبة متوقفة مؤقتاً</h2>
           <div class="pause-actions">
             <button id="btn-resume" class="btn-retro btn-primary">استئناف اللعب (P)</button>
-            <button id="btn-back-to-map" class="btn-retro btn-retro-mini">العودة للخريطة</button>
+            <button id="btn-back-to-map" class="btn-retro btn-retro-mini">خريطة المراحل</button>
           </div>
         </div>
       </section>
@@ -216,6 +268,7 @@
           </div>
           <div class="gameover-actions">
             <button id="btn-retry" class="btn-retro btn-danger">إعادة المحاولة 🔄</button>
+            <button id="btn-gameover-menu" class="btn-retro btn-retro-mini">القائمة الرئيسية</button>
           </div>
         </div>
       </section>
@@ -239,6 +292,10 @@
             <div class="v-stat"><span class="v-label">إجمالي المشتركين:</span><span id="victory-subs" class="v-val">0</span></div>
             <div class="v-stat"><span class="v-label">النقاط النهائية:</span><span id="victory-score" class="v-val">0</span></div>
             <div class="v-stat"><span class="v-label">التقييم العام:</span><span id="victory-rank" class="v-val rank-s">S+</span></div>
+          </div>
+
+          <div class="victory-actions">
+            <button id="btn-victory-menu" class="btn-retro btn-primary">العودة للقائمة الرئيسية</button>
           </div>
         </div>
       </section>

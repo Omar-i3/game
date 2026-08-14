@@ -1,546 +1,906 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - All 20 Stage Layouts & Data
+// Arab Gamers: The 20-Stage Pixel Campaign - Level Engine, Quota & Progression
 // ============================================================================
 
+// ----------------------------------------------------------------------------
+// LocalStorage Progression System
+// ----------------------------------------------------------------------------
+const PROGRESSION = {
+  getUnlockedLevel() {
+    try {
+      const val = parseInt(localStorage.getItem('arab_gamers_unlocked_level') || '1', 10);
+      return Math.max(1, Math.min(20, isNaN(val) ? 1 : val));
+    } catch (e) {
+      return 1;
+    }
+  },
+
+  unlockNextLevel(completedLevel) {
+    try {
+      const current = this.getUnlockedLevel();
+      const nextLevel = Math.min(20, Math.max(current, completedLevel + 1));
+      localStorage.setItem('arab_gamers_unlocked_level', nextLevel.toString());
+      return nextLevel;
+    } catch (e) {
+      return completedLevel + 1;
+    }
+  },
+
+  saveLevelStats(levelIndex, stars = 3, score = 0) {
+    try {
+      const starsData = JSON.parse(localStorage.getItem('arab_gamers_stars') || '{}');
+      starsData[levelIndex] = Math.max(starsData[levelIndex] || 0, stars);
+      localStorage.setItem('arab_gamers_stars', JSON.stringify(starsData));
+
+      const scoresData = JSON.parse(localStorage.getItem('arab_gamers_high_scores') || '{}');
+      scoresData[levelIndex] = Math.max(scoresData[levelIndex] || 0, score);
+      localStorage.setItem('arab_gamers_high_scores', JSON.stringify(scoresData));
+    } catch (e) {}
+  },
+
+  getLevelStars(levelIndex) {
+    try {
+      const starsData = JSON.parse(localStorage.getItem('arab_gamers_stars') || '{}');
+      return starsData[levelIndex] || 0;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  resetProgress() {
+    try {
+      localStorage.removeItem('arab_gamers_unlocked_level');
+      localStorage.removeItem('arab_gamers_stars');
+      localStorage.removeItem('arab_gamers_high_scores');
+    } catch (e) {}
+  }
+};
+
+window.PROGRESSION = PROGRESSION;
+
+// ----------------------------------------------------------------------------
+// 20 Extended Campaign Stages (Widths 3600px - 5000px, Quotas, Mid-Dialogues)
+// ----------------------------------------------------------------------------
 const CAMPAIGN_STAGES = {
   1: {
     id: 1, name: 'شرارة الصدمة', nameEn: 'Shockwave Spark', heroId: 'banderita',
-    bgm: 'city', width: 2400, height: 600, theme: 'city', skyColor: '#0a081e',
-    objectiveType: 'COLLECT', objectiveTitle: 'جمع البطاطس الذهبية',
-    objectiveDesc: 'اجمع 15 كيس بطاطس ذهبي لشحن الطاقة وفتح البوابة', objectiveTarget: 15,
+    width: 3800, height: 600, theme: 'city', skyColor: '#0a081e',
+    requiredSubsQuota: 50000,
+    objectiveType: 'COLLECT', objectiveTitle: 'جمع البطاطس والمشتركين',
+    objectiveDesc: 'اجمع 15 كيس بطاطس ذهبي و50,000 مشترك لشحن بوابة العبور!', objectiveTarget: 15,
+    midDialogue: {
+      triggerX: 1800,
+      lines: [
+        { speaker: 'banderita', name: 'بندريتا', text: 'وصلت لمنتصف شوارع المدينة! إشارات المشتركين بدأت تعود تدريجياً!' },
+        { speaker: 'banderita', name: 'بندريتا', text: 'سأواصل الاندفاع وجمع باقي الأكياس لفتح البوابة قبل نفاد الوقت!' }
+      ]
+    },
     platforms: [
-      { x: 0, y: 520, w: 800, h: 80, type: 'roof' }, { x: 880, y: 520, w: 700, h: 80, type: 'roof' },
-      { x: 1650, y: 520, w: 800, h: 80, type: 'roof' },
-      { x: 200, y: 400, w: 140, h: 20, type: 'holo', isOneWay: true },
-      { x: 420, y: 310, w: 150, h: 20, type: 'steel', isOneWay: true },
-      { x: 950, y: 380, w: 160, h: 20, type: 'holo', isOneWay: true },
-      { x: 1200, y: 290, w: 160, h: 20, type: 'steel', isOneWay: true },
-      { x: 1750, y: 390, w: 180, h: 20, type: 'holo', isOneWay: true }
+      { x: 0, y: 520, w: 1000, h: 80, type: 'roof' },
+      { x: 1100, y: 520, w: 1200, h: 80, type: 'roof' },
+      { x: 2400, y: 520, w: 1400, h: 80, type: 'roof' },
+      { x: 250, y: 410, w: 180, h: 20, type: 'holo', isOneWay: true },
+      { x: 500, y: 310, w: 200, h: 20, type: 'steel', isOneWay: true },
+      { x: 780, y: 220, w: 180, h: 20, type: 'holo', isOneWay: true },
+      { x: 1250, y: 410, w: 200, h: 20, type: 'steel', isOneWay: true },
+      { x: 1550, y: 300, w: 220, h: 20, type: 'holo', isOneWay: true },
+      { x: 1900, y: 220, w: 200, h: 20, type: 'steel', isOneWay: true },
+      { x: 2550, y: 400, w: 220, h: 20, type: 'holo', isOneWay: true },
+      { x: 2900, y: 300, w: 240, h: 20, type: 'steel', isOneWay: true },
+      { x: 3300, y: 400, w: 200, h: 20, type: 'holo', isOneWay: true }
     ],
-    hazards: [{ x: 800, y: 560, w: 80, h: 40, type: 'glitchPit' }],
-    pickups: Array.from({ length: 15 }, (_, i) => ({ x: 180 + i * 145, y: 260 + (i % 3) * 60, type: 'potatoSack' })),
-    enemies: [{ x: 450, y: 480, type: 'glitchBot' }, { x: 1000, y: 480, type: 'dislikeDrone' }, { x: 1750, y: 480, type: 'glitchBot' }],
-    exitPortal: { x: 2300, y: 440, w: 40, h: 80 }
+    hazards: [
+      { x: 1000, y: 560, w: 100, h: 40, type: 'glitchPit' },
+      { x: 2300, y: 560, w: 100, h: 40, type: 'glitchPit' }
+    ],
+    pickups: [
+      // 15 Potato Sacks
+      ...Array.from({ length: 15 }, (_, i) => ({ x: 220 + i * 230, y: 220 + (i % 3) * 60, type: 'potatoSack' })),
+      // Subscriber Coins (Total 70,000 Subs available)
+      { x: 300, y: 360, type: 'subCoin5k', value: 5000 },
+      { x: 600, y: 260, type: 'subCoin10k', value: 10000 },
+      { x: 1300, y: 360, type: 'subCoin10k', value: 10000 },
+      { x: 1650, y: 250, type: 'subCoin10k', value: 10000 },
+      { x: 2000, y: 170, type: 'subCoin10k', value: 10000 },
+      { x: 2650, y: 350, type: 'subCoin10k', value: 10000 },
+      { x: 3050, y: 250, type: 'subCoin15k', value: 15000 },
+      // Food
+      { x: 850, y: 480, type: 'shawarma' },
+      { x: 2150, y: 480, type: 'karak' }
+    ],
+    enemies: [
+      { x: 650, y: 480, type: 'glitchBot' },
+      { x: 1400, y: 480, type: 'dislikeDrone' },
+      { x: 1750, y: 480, type: 'glitchBot' },
+      { x: 2700, y: 480, type: 'toxicCrawler' },
+      { x: 3200, y: 480, type: 'glitchBot' }
+    ],
+    exitPortal: { x: 3650, y: 440, w: 50, h: 80 }
   },
 
   2: {
     id: 2, name: 'سباق ضد اللاغ', nameEn: 'Race Against Lag', heroId: 'banderita',
-    bgm: 'city', width: 2800, height: 600, theme: 'city', skyColor: '#12052b',
-    objectiveType: 'SPEEDRUN_TIMER', objectiveTitle: 'سباق ضد اللاغ',
-    objectiveDesc: 'اعبر خط النهاية في أقل من 45 ثانية قبل حظر السيرفر!', objectiveTimeLimit: 45,
+    width: 4200, height: 600, theme: 'city', skyColor: '#12052b',
+    requiredSubsQuota: 60000,
+    objectiveType: 'SPEEDRUN_TIMER', objectiveTitle: 'سباق السرعة القصوى',
+    objectiveDesc: 'اعبر في أقل من 55 ثانية واجمع 60,000 مشترك قبل حظر السيرفر!', objectiveTimeLimit: 55,
+    midDialogue: {
+      triggerX: 2100,
+      lines: [
+        { speaker: 'banderita', name: 'بندريتا', text: 'سرعة البينغ ترتفع! يجب أن أستخدم الـ Dash لتخطي فجوات اللاغ بسرعة!' }
+      ]
+    },
     platforms: [
-      { x: 0, y: 520, w: 2800, h: 80, type: 'roof' },
-      { x: 300, y: 410, w: 120, h: 20, type: 'holo', isOneWay: true },
-      { x: 600, y: 320, w: 140, h: 20, type: 'steel', isOneWay: true },
-      { x: 1000, y: 400, w: 150, h: 20, type: 'holo', isOneWay: true },
-      { x: 1400, y: 310, w: 160, h: 20, type: 'steel', isOneWay: true },
-      { x: 1900, y: 380, w: 180, h: 20, type: 'holo', isOneWay: true },
-      { x: 2300, y: 290, w: 180, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4200, h: 80, type: 'roof' },
+      { x: 350, y: 410, w: 160, h: 20, type: 'holo', isOneWay: true },
+      { x: 750, y: 320, w: 180, h: 20, type: 'steel', isOneWay: true },
+      { x: 1200, y: 410, w: 180, h: 20, type: 'holo', isOneWay: true },
+      { x: 1650, y: 320, w: 200, h: 20, type: 'steel', isOneWay: true },
+      { x: 2200, y: 400, w: 200, h: 20, type: 'holo', isOneWay: true },
+      { x: 2700, y: 300, w: 220, h: 20, type: 'steel', isOneWay: true },
+      { x: 3250, y: 390, w: 200, h: 20, type: 'holo', isOneWay: true },
+      { x: 3700, y: 300, w: 220, h: 20, type: 'steel', isOneWay: true }
     ],
-    hazards: [{ x: 800, y: 500, w: 60, h: 20, type: 'spikes' }, { x: 1600, y: 500, w: 60, h: 20, type: 'spikes' }],
-    pickups: [{ x: 400, y: 480, type: 'like' }, { x: 1200, y: 480, type: 'like' }, { x: 2000, y: 480, type: 'like' }],
-    enemies: [{ x: 500, y: 480, type: 'glitchBot' }, { x: 1100, y: 480, type: 'dislikeDrone' }, { x: 1800, y: 480, type: 'glitchBot' }, { x: 2200, y: 480, type: 'toxicCrawler' }],
-    exitPortal: { x: 2700, y: 440, w: 40, h: 80 }
+    hazards: [
+      { x: 950, y: 500, w: 80, h: 20, type: 'spikes' },
+      { x: 1950, y: 500, w: 90, h: 20, type: 'spikes' },
+      { x: 2950, y: 500, w: 90, h: 20, type: 'spikes' }
+    ],
+    pickups: [
+      { x: 400, y: 360, type: 'subCoin10k', value: 10000 },
+      { x: 800, y: 270, type: 'subCoin10k', value: 10000 },
+      { x: 1300, y: 360, type: 'subCoin10k', value: 10000 },
+      { x: 1750, y: 270, type: 'subCoin10k', value: 10000 },
+      { x: 2300, y: 350, type: 'subCoin10k', value: 10000 },
+      { x: 2800, y: 250, type: 'subCoin10k', value: 10000 },
+      { x: 3350, y: 340, type: 'subCoin10k', value: 10000 },
+      { x: 3800, y: 250, type: 'subCoin10k', value: 10000 },
+      { x: 1500, y: 480, type: 'shawarma' }
+    ],
+    enemies: [
+      { x: 600, y: 480, type: 'glitchBot' },
+      { x: 1450, y: 480, type: 'dislikeDrone' },
+      { x: 2450, y: 480, type: 'toxicCrawler' },
+      { x: 3500, y: 480, type: 'glitchBot' }
+    ],
+    exitPortal: { x: 4050, y: 440, w: 50, h: 80 }
   },
 
   3: {
     id: 3, name: 'إنقاذ أفران التميس', nameEn: 'Save The Tamees Bakery', heroId: 'banderita',
-    bgm: 'city', width: 2200, height: 600, theme: 'city', skyColor: '#1a0d00',
-    objectiveType: 'KILL_COUNT', objectiveTitle: 'تحرير أفران التميس',
-    objectiveDesc: 'اقضِ على 12 روبوت جليتش معتدين على المخبز', objectiveTarget: 12,
+    width: 4000, height: 600, theme: 'city', skyColor: '#1a0d00',
+    requiredSubsQuota: 75000,
+    objectiveType: 'KILL_COUNT', objectiveTitle: 'تحرير مخابز التميس',
+    objectiveDesc: 'اقضِ على 12 روبوت جليتش واجمع 75,000 مشترك لتحرير المخبز!', objectiveTarget: 12,
+    midDialogue: {
+      triggerX: 2000,
+      lines: [
+        { speaker: 'banderita', name: 'بندريتا', text: 'الأفران مشتعلة هنا! الروبوتات تحاول إفساد عجين التميس باللاغ... لن أسمح لهم!' }
+      ]
+    },
     platforms: [
-      { x: 0, y: 520, w: 2200, h: 80, type: 'roof' },
-      { x: 250, y: 390, w: 180, h: 20, type: 'steel', isOneWay: true },
-      { x: 600, y: 300, w: 200, h: 20, type: 'holo', isOneWay: true },
-      { x: 1000, y: 390, w: 180, h: 20, type: 'steel', isOneWay: true },
-      { x: 1400, y: 300, w: 200, h: 20, type: 'holo', isOneWay: true }
+      { x: 0, y: 520, w: 4000, h: 80, type: 'roof' },
+      { x: 300, y: 390, w: 220, h: 20, type: 'steel', isOneWay: true },
+      { x: 750, y: 290, w: 240, h: 20, type: 'holo', isOneWay: true },
+      { x: 1250, y: 390, w: 220, h: 20, type: 'steel', isOneWay: true },
+      { x: 1750, y: 290, w: 240, h: 20, type: 'holo', isOneWay: true },
+      { x: 2350, y: 390, w: 220, h: 20, type: 'steel', isOneWay: true },
+      { x: 2850, y: 290, w: 240, h: 20, type: 'holo', isOneWay: true },
+      { x: 3400, y: 390, w: 220, h: 20, type: 'steel', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 300, y: 350, type: 'shawarma' }, { x: 1100, y: 350, type: 'shawarma' }, { x: 1500, y: 260, type: 'karak' }],
-    enemies: Array.from({ length: 12 }, (_, i) => ({ x: 350 + i * 140, y: 480, type: (i % 2 === 0 ? 'glitchBot' : 'toxicCrawler') })),
-    exitPortal: { x: 2100, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 400, y: 340, type: 'subCoin10k', value: 10000 },
+      { x: 850, y: 240, type: 'subCoin15k', value: 15000 },
+      { x: 1350, y: 340, type: 'subCoin15k', value: 15000 },
+      { x: 1850, y: 240, type: 'subCoin15k', value: 15000 },
+      { x: 2450, y: 340, type: 'subCoin15k', value: 15000 },
+      { x: 2950, y: 240, type: 'subCoin15k', value: 15000 },
+      { x: 3500, y: 340, type: 'subCoin15k', value: 15000 },
+      { x: 1000, y: 480, type: 'shawarma' },
+      { x: 2600, y: 480, type: 'karak' }
+    ],
+    enemies: Array.from({ length: 12 }, (_, i) => ({
+      x: 350 + i * 280,
+      y: 480,
+      type: (i % 2 === 0 ? 'glitchBot' : 'toxicCrawler')
+    })),
+    exitPortal: { x: 3880, y: 440, w: 50, h: 80 }
   },
 
   4: {
-    id: 4, name: 'زعيم مدينة الستريم', nameEn: 'Stream City Boss', heroId: 'banderita',
-    bgm: 'boss', width: 1400, height: 600, theme: 'bossArena', skyColor: '#1a0505',
-    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'هزيمة وحش اللاغ',
-    objectiveDesc: 'اهزم وحش اللاغ العملاق (Lag Titan) لتحرير برج الاتصالات', objectiveTarget: 1,
+    id: 4, name: 'زعيم مدينة الستريم', nameEn: 'Lag Titan Boss', heroId: 'banderita',
+    width: 3600, height: 600, theme: 'bossArena', skyColor: '#2b0000',
+    requiredSubsQuota: 80000,
+    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'سحق وحش اللاغ',
+    objectiveDesc: 'اهزم وحش اللاغ العملاق وحرر 80,000 مشترك!',
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'arenaFloor' },
-      { x: 160, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true },
-      { x: 500, y: 280, w: 240, h: 20, type: 'holo', isOneWay: true },
-      { x: 880, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 3600, h: 80, type: 'roof' },
+      { x: 400, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true },
+      { x: 800, y: 280, w: 220, h: 20, type: 'holo', isOneWay: true },
+      { x: 1400, y: 380, w: 240, h: 20, type: 'steel', isOneWay: true },
+      { x: 2000, y: 280, w: 220, h: 20, type: 'holo', isOneWay: true },
+      { x: 2600, y: 380, w: 240, h: 20, type: 'steel', isOneWay: true }
     ],
-    hazards: [],
-    pickups: [{ x: 200, y: 340, type: 'like' }, { x: 600, y: 240, type: 'shawarma' }, { x: 920, y: 340, type: 'like' }],
-    enemies: [],
-    bossData: { x: 950, y: 380, type: 'lagTitan' },
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    hazards: [{ x: 1100, y: 500, w: 80, h: 20, type: 'spikes' }],
+    pickups: [
+      { x: 450, y: 330, type: 'subCoin15k', value: 15000 },
+      { x: 850, y: 230, type: 'subCoin15k', value: 15000 },
+      { x: 1500, y: 330, type: 'subCoin20k', value: 20000 },
+      { x: 2100, y: 230, type: 'subCoin20k', value: 20000 },
+      { x: 2700, y: 330, type: 'subCoin20k', value: 20000 },
+      { x: 600, y: 480, type: 'shawarma' },
+      { x: 2300, y: 480, type: 'karak' }
+    ],
+    enemies: [
+      { x: 500, y: 480, type: 'glitchBot' },
+      { x: 1200, y: 480, type: 'dislikeDrone' }
+    ],
+    boss: { type: 'lagTitan', x: 2400, y: 340 },
+    exitPortal: { x: 3450, y: 440, w: 50, h: 80 }
   },
 
+  // Stages 5-8: MLZLZ Horror Arc
   5: {
-    id: 5, name: 'طريق الرعب المعتم', nameEn: 'The Dark Horror Path', heroId: 'mlzlz',
-    bgm: 'horror', width: 2400, height: 600, theme: 'horror', skyColor: '#0a0314',
-    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'إشعال فوانيس الشاي',
-    objectiveDesc: 'اسكب الشاي الساخن لإشعال 5 فوانيس وكشف الدرب المعتم', objectiveTarget: 5,
+    id: 5, name: 'طريق الرعب المعتم', nameEn: 'Dark Horror Trail', heroId: 'mlzlz',
+    width: 3900, height: 600, theme: 'horror', skyColor: '#050d1a',
+    requiredSubsQuota: 90000,
+    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'إنارة فوانيس الشاي',
+    objectiveDesc: 'أشعل 5 فوانيس شاي برذاذ الشاي الساخن واجمع 90,000 مشترك!', objectiveTarget: 5,
     platforms: [
-      { x: 0, y: 520, w: 600, h: 80, type: 'nether' }, { x: 700, y: 520, w: 600, h: 80, type: 'nether' },
-      { x: 1400, y: 520, w: 1000, h: 80, type: 'nether' },
-      { x: 200, y: 400, w: 130, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 450, y: 310, w: 140, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 850, y: 380, w: 150, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1150, y: 290, w: 150, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1600, y: 380, w: 160, h: 20, type: 'blockPlatform', isOneWay: true }
+      { x: 0, y: 520, w: 3900, h: 80, type: 'stone' },
+      { x: 350, y: 400, w: 180, h: 20, type: 'wood', isOneWay: true },
+      { x: 800, y: 300, w: 200, h: 20, type: 'wood', isOneWay: true },
+      { x: 1400, y: 400, w: 200, h: 20, type: 'wood', isOneWay: true },
+      { x: 2000, y: 300, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 2600, y: 400, w: 200, h: 20, type: 'wood', isOneWay: true },
+      { x: 3150, y: 300, w: 220, h: 20, type: 'wood', isOneWay: true }
     ],
-    hazards: [{ x: 600, y: 560, w: 100, h: 40, type: 'lavaPit' }],
+    hazards: [{ x: 1100, y: 500, w: 80, h: 20, type: 'ghostFog' }],
+    pickups: [
+      { x: 400, y: 350, type: 'subCoin15k', value: 15000 },
+      { x: 900, y: 250, type: 'subCoin20k', value: 20000 },
+      { x: 1500, y: 350, type: 'subCoin20k', value: 20000 },
+      { x: 2100, y: 250, type: 'subCoin20k', value: 20000 },
+      { x: 2700, y: 350, type: 'subCoin20k', value: 20000 },
+      { x: 3250, y: 250, type: 'subCoin20k', value: 20000 },
+      { x: 1700, y: 480, type: 'karak' }
+    ],
     interactiveObjects: [
-      { id: 'lantern_1', x: 260, y: 370, type: 'teaLantern', activated: false },
-      { id: 'lantern_2', x: 510, y: 280, type: 'teaLantern', activated: false },
-      { id: 'lantern_3', x: 920, y: 350, type: 'teaLantern', activated: false },
-      { id: 'lantern_4', x: 1220, y: 260, type: 'teaLantern', activated: false },
-      { id: 'lantern_5', x: 1680, y: 350, type: 'teaLantern', activated: false }
+      { id: 'lantern_1', type: 'teaLantern', x: 450, y: 370, activated: false },
+      { id: 'lantern_2', type: 'teaLantern', x: 900, y: 270, activated: false },
+      { id: 'lantern_3', type: 'teaLantern', x: 1500, y: 370, activated: false },
+      { id: 'lantern_4', type: 'teaLantern', x: 2100, y: 270, activated: false },
+      { id: 'lantern_5', type: 'teaLantern', x: 3250, y: 270, activated: false }
     ],
-    pickups: [{ x: 300, y: 480, type: 'karak' }, { x: 1000, y: 480, type: 'karak' }, { x: 1800, y: 480, type: 'like' }],
-    enemies: [{ x: 400, y: 480, type: 'horrorGhost' }, { x: 900, y: 480, type: 'horrorGhost' }, { x: 1500, y: 480, type: 'horrorGhost' }],
-    exitPortal: { x: 2300, y: 440, w: 40, h: 80 }
+    enemies: [
+      { x: 650, y: 480, type: 'horrorGhost' },
+      { x: 1750, y: 480, type: 'horrorGhost' },
+      { x: 2400, y: 480, type: 'horrorGhost' },
+      { x: 3000, y: 480, type: 'toxicCrawler' }
+    ],
+    exitPortal: { x: 3750, y: 440, w: 50, h: 80 }
   },
 
   6: {
     id: 6, name: 'غرفة الجامب سكيرز', nameEn: 'Jumpscare Chamber', heroId: 'mlzlz',
-    bgm: 'horror', width: 1400, height: 600, theme: 'horror', skyColor: '#12051f',
+    width: 3800, height: 600, theme: 'horror', skyColor: '#0a001a',
+    requiredSubsQuota: 95000,
     objectiveType: 'SURVIVE_TIMER', objectiveTitle: 'الصمود التكتيكي',
-    objectiveDesc: 'اصمد بهدوء لمدة 60 ثانية ضد أمواج أشباح الرعب', objectiveTimeLimit: 60,
+    objectiveDesc: 'اصمد لمدة 60 ثانية واجمع 95,000 مشترك ضد هجوم الأشباح!', objectiveTimeLimit: 60,
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'nether' },
-      { x: 200, y: 380, w: 220, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 580, y: 270, w: 240, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 980, y: 380, w: 220, h: 20, type: 'blockPlatform', isOneWay: true }
+      { x: 0, y: 520, w: 3800, h: 80, type: 'stone' },
+      { x: 400, y: 380, w: 200, h: 20, type: 'wood', isOneWay: true },
+      { x: 900, y: 280, w: 240, h: 20, type: 'wood', isOneWay: true },
+      { x: 1500, y: 380, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 2100, y: 280, w: 240, h: 20, type: 'wood', isOneWay: true },
+      { x: 2700, y: 380, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 3200, y: 280, w: 220, h: 20, type: 'wood', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 250, y: 340, type: 'karak' }, { x: 700, y: 230, type: 'like' }, { x: 1050, y: 340, type: 'karak' }],
-    enemies: [{ x: 300, y: 480, type: 'horrorGhost' }, { x: 600, y: 200, type: 'horrorGhost' }, { x: 1100, y: 480, type: 'horrorGhost' }],
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 450, y: 330, type: 'subCoin20k', value: 20000 },
+      { x: 950, y: 230, type: 'subCoin20k', value: 20000 },
+      { x: 1550, y: 330, type: 'subCoin20k', value: 20000 },
+      { x: 2150, y: 230, type: 'subCoin20k', value: 20000 },
+      { x: 2750, y: 330, type: 'subCoin20k', value: 20000 },
+      { x: 1800, y: 480, type: 'karak' }
+    ],
+    enemies: [
+      { x: 500, y: 480, type: 'horrorGhost' },
+      { x: 1100, y: 480, type: 'horrorGhost' },
+      { x: 1800, y: 480, type: 'horrorGhost' },
+      { x: 2500, y: 480, type: 'horrorGhost' },
+      { x: 3100, y: 480, type: 'horrorGhost' }
+    ],
+    exitPortal: { x: 3650, y: 440, w: 50, h: 80 }
   },
 
   7: {
     id: 7, name: 'قصر الأسرار', nameEn: 'Mansion of Secrets', heroId: 'mlzlz',
-    bgm: 'horror', width: 2200, height: 600, theme: 'horror', skyColor: '#190a2a',
-    objectiveType: 'COLLECT', objectiveTitle: 'المفاتيح المشفرة',
-    objectiveDesc: 'اعثر على 3 مفاتيح مشفرة مخبأة لفك رموز السيرفر المركزي', objectiveTarget: 3,
+    width: 4000, height: 600, theme: 'horror', skyColor: '#050d1a',
+    requiredSubsQuota: 100000,
+    objectiveType: 'COLLECT', objectiveTitle: 'فك شفرات القصر',
+    objectiveDesc: 'اعثر على 3 مفاتيح مشفرة خلف الجدران السرية واجمع 100,000 مشترك!', objectiveTarget: 3,
     platforms: [
-      { x: 0, y: 520, w: 2200, h: 80, type: 'nether' },
-      { x: 250, y: 400, w: 160, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 600, y: 310, w: 180, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1100, y: 390, w: 180, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1550, y: 300, w: 190, h: 20, type: 'blockPlatform', isOneWay: true }
+      { x: 0, y: 520, w: 4000, h: 80, type: 'stone' },
+      { x: 350, y: 390, w: 200, h: 20, type: 'wood', isOneWay: true },
+      { x: 850, y: 280, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 1450, y: 390, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 2050, y: 280, w: 240, h: 20, type: 'wood', isOneWay: true },
+      { x: 2700, y: 390, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 3300, y: 280, w: 240, h: 20, type: 'wood', isOneWay: true }
     ],
-    hazards: [{ x: 900, y: 500, w: 60, h: 20, type: 'spikes' }],
+    hazards: [],
     pickups: [
-      { x: 320, y: 360, type: 'cipherKey' },
-      { x: 690, y: 270, type: 'cipherKey' },
-      { x: 1640, y: 260, type: 'cipherKey' },
-      { x: 1100, y: 480, type: 'karak' }
+      { x: 900, y: 230, type: 'secretKey' },
+      { x: 2150, y: 230, type: 'secretKey' },
+      { x: 3400, y: 230, type: 'secretKey' },
+      { x: 450, y: 340, type: 'subCoin20k', value: 20000 },
+      { x: 1550, y: 340, type: 'subCoin25k', value: 25000 },
+      { x: 2800, y: 340, type: 'subCoin30k', value: 30000 },
+      { x: 3500, y: 340, type: 'subCoin30k', value: 30000 },
+      { x: 1800, y: 480, type: 'karak' }
     ],
-    enemies: [{ x: 400, y: 480, type: 'horrorGhost' }, { x: 1200, y: 480, type: 'horrorGhost' }, { x: 1700, y: 480, type: 'toxicCrawler' }],
-    exitPortal: { x: 2100, y: 440, w: 40, h: 80 }
+    enemies: [
+      { x: 600, y: 480, type: 'horrorGhost' },
+      { x: 1700, y: 480, type: 'horrorGhost' },
+      { x: 2900, y: 480, type: 'horrorGhost' }
+    ],
+    exitPortal: { x: 3850, y: 440, w: 50, h: 80 }
   },
 
   8: {
     id: 8, name: 'شبح الديسلايك الأسود', nameEn: 'Black Dislike Ghost Boss', heroId: 'mlzlz',
-    bgm: 'boss', width: 1400, height: 600, theme: 'bossArena', skyColor: '#120024',
-    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'هزيمة شبح الديسلايك',
-    objectiveDesc: 'اهزم شبح الديسلايك الأسود بسكب الشاي الساخن المركز', objectiveTarget: 1,
+    width: 3800, height: 600, theme: 'bossArena', skyColor: '#120024',
+    requiredSubsQuota: 110000,
+    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'طرد شبح الديسلايك',
+    objectiveDesc: 'اسكب الشاي الساخن واهزم شبح الديسلايك وحرر 110,000 مشترك!',
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'arenaFloor' },
-      { x: 180, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true },
-      { x: 520, y: 280, w: 240, h: 20, type: 'holo', isOneWay: true },
-      { x: 860, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 3800, h: 80, type: 'stone' },
+      { x: 400, y: 380, w: 220, h: 20, type: 'wood', isOneWay: true },
+      { x: 900, y: 270, w: 240, h: 20, type: 'wood', isOneWay: true },
+      { x: 1500, y: 380, w: 240, h: 20, type: 'wood', isOneWay: true },
+      { x: 2100, y: 270, w: 240, h: 20, type: 'wood', isOneWay: true },
+      { x: 2800, y: 380, w: 240, h: 20, type: 'wood', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 220, y: 340, type: 'karak' }, { x: 640, y: 240, type: 'like' }, { x: 920, y: 340, type: 'karak' }],
-    enemies: [],
-    bossData: { x: 950, y: 380, type: 'dislikeGhost' },
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 450, y: 330, type: 'subCoin25k', value: 25000 },
+      { x: 950, y: 220, type: 'subCoin25k', value: 25000 },
+      { x: 1600, y: 330, type: 'subCoin30k', value: 30000 },
+      { x: 2200, y: 220, type: 'subCoin35k', value: 35000 },
+      { x: 2900, y: 330, type: 'subCoin35k', value: 35000 },
+      { x: 1200, y: 480, type: 'karak' }
+    ],
+    enemies: [{ x: 700, y: 480, type: 'horrorGhost' }],
+    boss: { type: 'dislikeGhost', x: 2500, y: 300 },
+    exitPortal: { x: 3650, y: 440, w: 50, h: 80 }
   },
 
+  // Stages 9-12: oCMz Anime & Minecraft Clouds Arc
   9: {
     id: 9, name: 'جزر البلوكات العائمة', nameEn: 'Floating Block Islands', heroId: 'ocmz',
-    bgm: 'cloud', width: 2400, height: 600, theme: 'horror', skyColor: '#0c2461',
-    objectiveType: 'KILL_COUNT', objectiveTitle: 'قراصنة السحاب',
-    objectiveDesc: 'اقضِ على 15 قرصان جليتش طائر باستخدام بوميرانج قبعة القش', objectiveTarget: 15,
+    width: 4200, height: 600, theme: 'cloud', skyColor: '#0c2461',
+    requiredSubsQuota: 120000,
+    objectiveType: 'KILL_COUNT', objectiveTitle: 'إسقاط قراصنة الجليتش',
+    objectiveDesc: 'اقضِ على 15 قرصان جليتش طائر بقبعة القش واجمع 120,000 مشترك!', objectiveTarget: 15,
     platforms: [
-      { x: 0, y: 520, w: 500, h: 80, type: 'nether' }, { x: 600, y: 520, w: 600, h: 80, type: 'nether' },
-      { x: 1300, y: 520, w: 1100, h: 80, type: 'nether' },
-      { x: 180, y: 400, w: 140, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 420, y: 300, w: 150, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 800, y: 380, w: 160, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1100, y: 280, w: 160, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1600, y: 370, w: 180, h: 20, type: 'blockPlatform', isOneWay: true }
+      { x: 0, y: 520, w: 4200, h: 80, type: 'grass' },
+      { x: 300, y: 400, w: 200, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 750, y: 300, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 1250, y: 400, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 1750, y: 290, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2350, y: 400, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2900, y: 290, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 3450, y: 400, w: 220, h: 20, type: 'cloudBlock', isOneWay: true }
     ],
-    hazards: [{ x: 500, y: 560, w: 100, h: 40, type: 'lavaPit' }],
-    pickups: [{ x: 300, y: 480, type: 'like' }, { x: 950, y: 480, type: 'like' }, { x: 1800, y: 480, type: 'shawarma' }],
-    enemies: Array.from({ length: 15 }, (_, i) => ({ x: 300 + i * 130, y: 220 + (i % 3) * 80, type: 'glitchPirate' })),
-    exitPortal: { x: 2300, y: 440, w: 40, h: 80 }
+    hazards: [],
+    pickups: [
+      { x: 350, y: 350, type: 'subCoin20k', value: 20000 },
+      { x: 800, y: 250, type: 'subCoin25k', value: 25000 },
+      { x: 1350, y: 350, type: 'subCoin25k', value: 25000 },
+      { x: 1850, y: 240, type: 'subCoin30k', value: 30000 },
+      { x: 2450, y: 350, type: 'subCoin30k', value: 30000 },
+      { x: 3000, y: 240, type: 'subCoin30k', value: 30000 },
+      { x: 1500, y: 480, type: 'shawarma' }
+    ],
+    enemies: Array.from({ length: 15 }, (_, i) => ({
+      x: 350 + i * 240,
+      y: 480,
+      type: 'glitchPirate'
+    })),
+    exitPortal: { x: 4050, y: 440, w: 50, h: 80 }
   },
 
   10: {
     id: 10, name: 'تشغيل السفينة الجوية', nameEn: 'Power Up Airship', heroId: 'ocmz',
-    bgm: 'cloud', width: 2200, height: 600, theme: 'horror', skyColor: '#1e3799',
-    objectiveType: 'COLLECT', objectiveTitle: 'بطاريات الداتا',
-    objectiveDesc: 'اجمع 4 بطاريات داتا لتشغيل محركات السفينة الجوية', objectiveTarget: 4,
+    width: 4400, height: 600, theme: 'cloud', skyColor: '#1e3799',
+    requiredSubsQuota: 130000,
+    objectiveType: 'COLLECT', objectiveTitle: 'شحن بطاريات السفينة',
+    objectiveDesc: 'اجمع 4 بطاريات داتا واجمع 130,000 مشترك لتشغيل المحركات!', objectiveTarget: 4,
     platforms: [
-      { x: 0, y: 520, w: 2200, h: 80, type: 'nether' },
-      { x: 200, y: 400, w: 150, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 550, y: 300, w: 160, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 950, y: 390, w: 170, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1400, y: 290, w: 180, h: 20, type: 'blockPlatform', isOneWay: true }
+      { x: 0, y: 520, w: 4400, h: 80, type: 'grass' },
+      { x: 400, y: 390, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 950, y: 280, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 1600, y: 390, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2250, y: 280, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2900, y: 390, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 3550, y: 280, w: 240, h: 20, type: 'cloudBlock', isOneWay: true }
     ],
     hazards: [],
     pickups: [
-      { x: 270, y: 360, type: 'dataBattery' },
-      { x: 630, y: 260, type: 'dataBattery' },
-      { x: 1030, y: 350, type: 'dataBattery' },
-      { x: 1490, y: 250, type: 'dataBattery' }
+      { x: 980, y: 230, type: 'dataBattery' },
+      { x: 1650, y: 340, type: 'dataBattery' },
+      { x: 2300, y: 230, type: 'dataBattery' },
+      { x: 3600, y: 230, type: 'dataBattery' },
+      { x: 450, y: 340, type: 'subCoin25k', value: 25000 },
+      { x: 1100, y: 230, type: 'subCoin30k', value: 30000 },
+      { x: 1800, y: 340, type: 'subCoin35k', value: 35000 },
+      { x: 3000, y: 340, type: 'subCoin40k', value: 40000 },
+      { x: 3700, y: 230, type: 'subCoin40k', value: 40000 },
+      { x: 2000, y: 480, type: 'shawarma' }
     ],
-    enemies: [{ x: 400, y: 480, type: 'glitchPirate' }, { x: 1100, y: 480, type: 'glitchPirate' }, { x: 1600, y: 480, type: 'dislikeDrone' }],
-    exitPortal: { x: 2100, y: 440, w: 40, h: 80 }
+    enemies: [
+      { x: 600, y: 480, type: 'glitchPirate' },
+      { x: 1400, y: 480, type: 'glitchPirate' },
+      { x: 2500, y: 480, type: 'glitchPirate' },
+      { x: 3200, y: 480, type: 'glitchPirate' }
+    ],
+    exitPortal: { x: 4250, y: 440, w: 50, h: 80 }
   },
 
   11: {
-    id: 11, name: 'باركور السحاب', nameEn: 'Cloud Parkour Zero Falls', heroId: 'ocmz',
-    bgm: 'cloud', width: 2600, height: 600, theme: 'cloud', skyColor: '#4a69bd',
-    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'اجتياز الباركور',
-    objectiveDesc: 'اقفز عبر منصات السحاب المتساقطة واصل للبوابة بنجاح', objectiveTarget: 1,
+    id: 11, name: 'باركور السحاب', nameEn: 'Cloud Parkour', heroId: 'ocmz',
+    width: 4500, height: 600, theme: 'cloud', skyColor: '#0a3d62',
+    requiredSubsQuota: 140000,
+    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'باركور القفز الثلاثي',
+    objectiveDesc: 'اقفز بالقفز الثلاثي دون سقوط واجمع 140,000 مشترك!', objectiveTarget: 1,
     platforms: [
-      { x: 0, y: 520, w: 300, h: 80, type: 'nether' },
-      { x: 380, y: 420, w: 100, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 560, y: 330, w: 90, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 740, y: 240, w: 90, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 940, y: 330, w: 90, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1140, y: 420, w: 100, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1340, y: 330, w: 90, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1540, y: 240, w: 90, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1740, y: 330, w: 90, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 1940, y: 420, w: 100, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 2150, y: 520, w: 450, h: 80, type: 'nether' }
+      { x: 0, y: 520, w: 700, h: 80, type: 'grass' },
+      { x: 850, y: 420, w: 180, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 1200, y: 320, w: 180, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 1600, y: 220, w: 200, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2050, y: 340, w: 180, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2450, y: 220, w: 200, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2900, y: 340, w: 180, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 3300, y: 220, w: 200, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 3750, y: 520, w: 750, h: 80, type: 'grass' }
     ],
-    hazards: [{ x: 300, y: 570, w: 1850, h: 30, type: 'lavaPit' }],
-    pickups: [{ x: 740, y: 200, type: 'like' }, { x: 1540, y: 200, type: 'goldenButton' }],
-    enemies: [{ x: 800, y: 150, type: 'glitchPirate' }, { x: 1600, y: 150, type: 'glitchPirate' }],
-    exitPortal: { x: 2500, y: 440, w: 40, h: 80 }
+    hazards: [{ x: 700, y: 580, w: 3050, h: 40, type: 'bottomlessCloud' }],
+    pickups: [
+      { x: 900, y: 370, type: 'subCoin25k', value: 25000 },
+      { x: 1250, y: 270, type: 'subCoin25k', value: 25000 },
+      { x: 1650, y: 170, type: 'subCoin35k', value: 35000 },
+      { x: 2100, y: 290, type: 'subCoin35k', value: 35000 },
+      { x: 2500, y: 170, type: 'subCoin35k', value: 35000 },
+      { x: 2950, y: 290, type: 'subCoin35k', value: 35000 },
+      { x: 3350, y: 170, type: 'subCoin35k', value: 35000 }
+    ],
+    enemies: [
+      { x: 1650, y: 180, type: 'glitchPirate' },
+      { x: 2500, y: 180, type: 'glitchPirate' },
+      { x: 3350, y: 180, type: 'glitchPirate' }
+    ],
+    exitPortal: { x: 4300, y: 440, w: 50, h: 80 }
   },
 
   12: {
-    id: 12, name: 'كابتن الباند الطائر', nameEn: 'Airship Captain Ban Boss', heroId: 'ocmz',
-    bgm: 'boss', width: 1400, height: 600, theme: 'bossArena', skyColor: '#0a192f',
-    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'إسقاط كابتن الباند',
-    objectiveDesc: 'أسقط منطاد كابتن الباند الطائر في المعركة الجوية', objectiveTarget: 1,
+    id: 12, name: 'كابتن الباند الطائر', nameEn: 'Captain Ban Boss', heroId: 'ocmz',
+    width: 4000, height: 600, theme: 'bossArena', skyColor: '#1e272e',
+    requiredSubsQuota: 150000,
+    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'إسقاط منطاد الباند',
+    objectiveDesc: 'اهزم كابتن الباند الطائر وحرر 150,000 مشترك!',
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'arenaFloor' },
-      { x: 180, y: 380, w: 220, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 540, y: 280, w: 240, h: 20, type: 'blockPlatform', isOneWay: true },
-      { x: 900, y: 380, w: 220, h: 20, type: 'blockPlatform', isOneWay: true }
+      { x: 0, y: 520, w: 4000, h: 80, type: 'grass' },
+      { x: 400, y: 380, w: 220, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 950, y: 260, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 1600, y: 380, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 2300, y: 260, w: 240, h: 20, type: 'cloudBlock', isOneWay: true },
+      { x: 3000, y: 380, w: 240, h: 20, type: 'cloudBlock', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 200, y: 340, type: 'like' }, { x: 600, y: 240, type: 'shawarma' }, { x: 950, y: 340, type: 'like' }],
-    enemies: [],
-    bossData: { x: 950, y: 380, type: 'captainBan' },
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 450, y: 330, type: 'subCoin35k', value: 35000 },
+      { x: 1000, y: 210, type: 'subCoin35k', value: 35000 },
+      { x: 1700, y: 330, type: 'subCoin40k', value: 40000 },
+      { x: 2400, y: 210, type: 'subCoin40k', value: 40000 },
+      { x: 3100, y: 330, type: 'subCoin40k', value: 40000 },
+      { x: 1200, y: 480, type: 'shawarma' }
+    ],
+    enemies: [{ x: 800, y: 480, type: 'glitchPirate' }],
+    boss: { type: 'captainBan', x: 2600, y: 280 },
+    exitPortal: { x: 3850, y: 440, w: 50, h: 80 }
   },
 
+  // Stages 13-16: Abu Abed Workshop & Mines Arc
   13: {
-    id: 13, name: 'النزول إلى المنجم', nameEn: 'Redstone Mine Descent', heroId: 'abuAbed',
-    bgm: 'mines', width: 2400, height: 600, theme: 'mines', skyColor: '#1e0c00',
-    objectiveType: 'COLLECT', objectiveTitle: 'سبائك الريدستون',
-    objectiveDesc: 'اجمع 20 سبيكة ريدستون نقية لتشغيل ورشة التطوير', objectiveTarget: 20,
+    id: 13, name: 'النزول إلى المنجم', nameEn: 'Descent to Redstone Mines', heroId: 'abuAbed',
+    width: 4400, height: 600, theme: 'mines', skyColor: '#1e0c00',
+    requiredSubsQuota: 160000,
+    objectiveType: 'COLLECT', objectiveTitle: 'استخراج سبائك الريدستون',
+    objectiveDesc: 'اجمع 20 سبيكة ريدستون و160,000 مشترك لصناعة دروع الورشة!', objectiveTarget: 20,
     platforms: [
-      { x: 0, y: 520, w: 2400, h: 80, type: 'roof' },
-      { x: 200, y: 410, w: 160, h: 20, type: 'steel', isOneWay: true },
-      { x: 500, y: 310, w: 180, h: 20, type: 'steel', isOneWay: true },
-      { x: 900, y: 400, w: 170, h: 20, type: 'steel', isOneWay: true },
-      { x: 1300, y: 300, w: 190, h: 20, type: 'steel', isOneWay: true },
-      { x: 1750, y: 390, w: 180, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4400, h: 80, type: 'oreStone' },
+      { x: 300, y: 400, w: 200, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 750, y: 290, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 1300, y: 400, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 1850, y: 290, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 2450, y: 400, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 3050, y: 290, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 3650, y: 400, w: 220, h: 20, type: 'woodMine', isOneWay: true }
     ],
-    hazards: [{ x: 750, y: 500, w: 60, h: 20, type: 'spikes' }, { x: 1500, y: 500, w: 60, h: 20, type: 'spikes' }],
-    pickups: Array.from({ length: 20 }, (_, i) => ({ x: 140 + i * 110, y: 270 + (i % 3) * 60, type: 'redstoneIngot' })),
-    enemies: [{ x: 400, y: 480, type: 'cyberSpider' }, { x: 1100, y: 480, type: 'cyberSpider' }, { x: 1800, y: 480, type: 'cyberSpider' }],
-    exitPortal: { x: 2300, y: 440, w: 40, h: 80 }
+    hazards: [{ x: 1100, y: 500, w: 90, h: 20, type: 'lavaSpill' }],
+    pickups: [
+      ...Array.from({ length: 20 }, (_, i) => ({ x: 220 + i * 190, y: 240 + (i % 3) * 60, type: 'redstoneIngot' })),
+      { x: 400, y: 350, type: 'subCoin35k', value: 35000 },
+      { x: 1400, y: 350, type: 'subCoin45k', value: 45000 },
+      { x: 2500, y: 350, type: 'subCoin45k', value: 45000 },
+      { x: 3700, y: 350, type: 'subCoin45k', value: 45000 },
+      { x: 1600, y: 480, type: 'shawarma' }
+    ],
+    enemies: [
+      { x: 600, y: 480, type: 'cyberSpider' },
+      { x: 1500, y: 480, type: 'cyberSpider' },
+      { x: 2700, y: 480, type: 'cyberSpider' },
+      { x: 3400, y: 480, type: 'cyberSpider' }
+    ],
+    exitPortal: { x: 4250, y: 440, w: 50, h: 80 }
   },
 
   14: {
-    id: 14, name: 'انعكاس الليزر', nameEn: 'Laser Mirror Reflection', heroId: 'abuAbed',
-    bgm: 'mines', width: 2200, height: 600, theme: 'mines', skyColor: '#120a05',
-    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'المرايا الأربع',
-    objectiveDesc: 'وجه شعاع الصلعة الذهبية لتفعيل 4 مرايا ليزرية وفتح البوابة', objectiveTarget: 4,
+    id: 14, name: 'انعكاس الليزر', nameEn: 'Optical Mirror Puzzle', heroId: 'abuAbed',
+    width: 4200, height: 600, theme: 'mines', skyColor: '#2d1400',
+    requiredSubsQuota: 170000,
+    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'تفعيل المرايا الشمسية',
+    objectiveDesc: 'وجه شعاع الصلعة الذهبية على 4 مرايا لفتح البوابة مع 170,000 مشترك!', objectiveTarget: 4,
     platforms: [
-      { x: 0, y: 520, w: 2200, h: 80, type: 'roof' },
-      { x: 250, y: 390, w: 180, h: 20, type: 'steel', isOneWay: true },
-      { x: 650, y: 290, w: 190, h: 20, type: 'steel', isOneWay: true },
-      { x: 1100, y: 390, w: 180, h: 20, type: 'steel', isOneWay: true },
-      { x: 1550, y: 290, w: 190, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4200, h: 80, type: 'oreStone' },
+      { x: 400, y: 390, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 950, y: 280, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 1600, y: 390, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 2300, y: 280, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 3000, y: 390, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 3600, y: 280, w: 240, h: 20, type: 'woodMine', isOneWay: true }
     ],
     hazards: [],
-    interactiveObjects: [
-      { id: 'mirror_1', x: 340, y: 360, type: 'mirror', activated: false },
-      { id: 'mirror_2', x: 740, y: 260, type: 'mirror', activated: false },
-      { id: 'mirror_3', x: 1190, y: 360, type: 'mirror', activated: false },
-      { id: 'mirror_4', x: 1640, y: 260, type: 'mirror', activated: false }
+    pickups: [
+      { x: 450, y: 340, type: 'subCoin40k', value: 40000 },
+      { x: 1000, y: 230, type: 'subCoin45k', value: 45000 },
+      { x: 1700, y: 340, type: 'subCoin45k', value: 45000 },
+      { x: 3100, y: 340, type: 'subCoin45k', value: 45000 },
+      { x: 1200, y: 480, type: 'shawarma' }
     ],
-    pickups: [{ x: 500, y: 480, type: 'karak' }, { x: 1300, y: 480, type: 'like' }],
-    enemies: [{ x: 500, y: 480, type: 'cyberSpider' }, { x: 1400, y: 480, type: 'glitchBot' }],
-    exitPortal: { x: 2100, y: 440, w: 40, h: 80 }
+    interactiveObjects: [
+      { id: 'mirror_1', type: 'mirror', x: 500, y: 360, activated: false },
+      { id: 'mirror_2', type: 'mirror', x: 1050, y: 250, activated: false },
+      { id: 'mirror_3', type: 'mirror', x: 1700, y: 360, activated: false },
+      { id: 'mirror_4', type: 'mirror', x: 3100, y: 360, activated: false }
+    ],
+    enemies: [
+      { x: 750, y: 480, type: 'cyberSpider' },
+      { x: 2000, y: 480, type: 'cyberSpider' },
+      { x: 3400, y: 480, type: 'cyberSpider' }
+    ],
+    exitPortal: { x: 4050, y: 440, w: 50, h: 80 }
   },
 
   15: {
     id: 15, name: 'الدفاع عن المولد', nameEn: 'Generator Defense', heroId: 'abuAbed',
-    bgm: 'mines', width: 1400, height: 600, theme: 'mines', skyColor: '#1c0e00',
+    width: 4000, height: 600, theme: 'mines', skyColor: '#1e0000',
+    requiredSubsQuota: 180000,
     objectiveType: 'SURVIVE_TIMER', objectiveTitle: 'حماية المولد',
-    objectiveDesc: 'دافع عن المولد المركزي لمدة 75 ثانية من هجوم العناكب', objectiveTimeLimit: 75,
+    objectiveDesc: 'انشر برج الريدستون واحمِ المولد لمدة 75 ثانية واجمع 180,000 مشترك!', objectiveTimeLimit: 75,
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'roof' },
-      { x: 180, y: 380, w: 220, h: 20, type: 'steel', isOneWay: true },
-      { x: 520, y: 270, w: 240, h: 20, type: 'steel', isOneWay: true },
-      { x: 880, y: 380, w: 220, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4000, h: 80, type: 'oreStone' },
+      { x: 400, y: 380, w: 220, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 950, y: 270, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 1600, y: 380, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 2300, y: 270, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 3000, y: 380, w: 240, h: 20, type: 'woodMine', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 200, y: 340, type: 'shawarma' }, { x: 600, y: 230, type: 'like' }, { x: 920, y: 340, type: 'karak' }],
-    enemies: [{ x: 200, y: 480, type: 'cyberSpider' }, { x: 1100, y: 480, type: 'cyberSpider' }, { x: 600, y: 180, type: 'cyberSpider' }],
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 450, y: 330, type: 'subCoin45k', value: 45000 },
+      { x: 1000, y: 220, type: 'subCoin45k', value: 45000 },
+      { x: 1700, y: 330, type: 'subCoin50k', value: 50000 },
+      { x: 2400, y: 220, type: 'subCoin50k', value: 50000 },
+      { x: 3100, y: 330, type: 'subCoin50k', value: 50000 },
+      { x: 1800, y: 480, type: 'shawarma' }
+    ],
+    enemies: [
+      { x: 600, y: 480, type: 'cyberSpider' },
+      { x: 1200, y: 480, type: 'cyberSpider' },
+      { x: 2000, y: 480, type: 'cyberSpider' },
+      { x: 2800, y: 480, type: 'cyberSpider' },
+      { x: 3400, y: 480, type: 'cyberSpider' }
+    ],
+    exitPortal: { x: 3850, y: 440, w: 50, h: 80 }
   },
 
   16: {
-    id: 16, name: 'الحفار الفولاذي', nameEn: 'The Glitch Drill Boss', heroId: 'abuAbed',
-    bgm: 'boss', width: 1400, height: 600, theme: 'bossArena', skyColor: '#1a0800',
-    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'تحطيم الحفار',
-    objectiveDesc: 'حطم دروع حفار الجليتش العملاق لفتح نفق اللوحة الأم', objectiveTarget: 1,
+    id: 16, name: 'الحفار الفولاذي', nameEn: 'Glitch Drill Boss', heroId: 'abuAbed',
+    width: 4000, height: 600, theme: 'bossArena', skyColor: '#2b1b00',
+    requiredSubsQuota: 190000,
+    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'تحطيم الحفار العملاق',
+    objectiveDesc: 'حطم حفار الجليتش العملاق وحرر 190,000 مشترك!',
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'arenaFloor' },
-      { x: 180, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true },
-      { x: 520, y: 280, w: 240, h: 20, type: 'steel', isOneWay: true },
-      { x: 880, y: 380, w: 200, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4000, h: 80, type: 'oreStone' },
+      { x: 400, y: 380, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 950, y: 260, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 1600, y: 380, w: 260, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 2400, y: 260, w: 240, h: 20, type: 'woodMine', isOneWay: true },
+      { x: 3100, y: 380, w: 240, h: 20, type: 'woodMine', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 220, y: 340, type: 'like' }, { x: 640, y: 240, type: 'shawarma' }, { x: 920, y: 340, type: 'like' }],
-    enemies: [],
-    bossData: { x: 950, y: 380, type: 'glitchDrill' },
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 450, y: 330, type: 'subCoin45k', value: 45000 },
+      { x: 1000, y: 210, type: 'subCoin45k', value: 45000 },
+      { x: 1700, y: 330, type: 'subCoin50k', value: 50000 },
+      { x: 2500, y: 210, type: 'subCoin50k', value: 50000 },
+      { x: 3200, y: 330, type: 'subCoin50k', value: 50000 },
+      { x: 1300, y: 480, type: 'shawarma' }
+    ],
+    enemies: [{ x: 800, y: 480, type: 'cyberSpider' }],
+    boss: { type: 'glitchDrill', x: 2700, y: 320 },
+    exitPortal: { x: 3850, y: 440, w: 50, h: 80 }
   },
 
+  // Stages 17-20: oPiiLz Motherboard & Final Grand Algorithm Climax
   17: {
-    id: 17, name: 'اختراق اللوحة الأم', nameEn: 'Motherboard Hack', heroId: 'opiilz',
-    bgm: 'cyber', width: 2400, height: 600, theme: 'city', skyColor: '#1e053a',
-    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'تفكيك الدوائر',
-    objectiveDesc: 'فكك 6 دوائر أمان بالمفك الأسطوري في أقل من 60 ثانية', objectiveTarget: 6, objectiveTimeLimit: 60,
+    id: 17, name: 'اختراق اللوحة الأم', nameEn: 'Motherboard Infiltration', heroId: 'opiilz',
+    width: 4400, height: 600, theme: 'cyber', skyColor: '#0a001a',
+    requiredSubsQuota: 200000,
+    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'تفكيك دوائر الأمان',
+    objectiveDesc: 'فكك 6 دوائر أمان بالمفك الأسطوري واجمع 200,000 مشترك في أقل من 60 ثانية!', objectiveTarget: 6,
     platforms: [
-      { x: 0, y: 520, w: 2400, h: 80, type: 'roof' },
-      { x: 200, y: 400, w: 160, h: 20, type: 'holo', isOneWay: true },
-      { x: 500, y: 300, w: 170, h: 20, type: 'holo', isOneWay: true },
-      { x: 850, y: 400, w: 160, h: 20, type: 'holo', isOneWay: true },
-      { x: 1200, y: 300, w: 170, h: 20, type: 'holo', isOneWay: true },
-      { x: 1550, y: 400, w: 160, h: 20, type: 'holo', isOneWay: true },
-      { x: 1900, y: 300, w: 170, h: 20, type: 'holo', isOneWay: true }
+      { x: 0, y: 520, w: 4400, h: 80, type: 'circuit' },
+      { x: 350, y: 400, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 850, y: 290, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 1450, y: 400, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2050, y: 290, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2700, y: 400, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 3350, y: 290, w: 240, h: 20, type: 'neonSteel', isOneWay: true }
     ],
-    hazards: [],
+    hazards: [{ x: 1100, y: 500, w: 80, h: 20, type: 'electricLaser' }],
+    pickups: [
+      { x: 400, y: 350, type: 'subCoin50k', value: 50000 },
+      { x: 900, y: 240, type: 'subCoin50k', value: 50000 },
+      { x: 1500, y: 350, type: 'subCoin50k', value: 50000 },
+      { x: 2100, y: 240, type: 'subCoin50k', value: 50000 },
+      { x: 2750, y: 350, type: 'subCoin50k', value: 50000 },
+      { x: 3400, y: 240, type: 'subCoin50k', value: 50000 },
+      { x: 1750, y: 480, type: 'shawarma' }
+    ],
     interactiveObjects: [
-      { id: 'circuit_1', x: 280, y: 370, type: 'securityCircuit', activated: false },
-      { id: 'circuit_2', x: 580, y: 270, type: 'securityCircuit', activated: false },
-      { id: 'circuit_3', x: 930, y: 370, type: 'securityCircuit', activated: false },
-      { id: 'circuit_4', x: 1280, y: 270, type: 'securityCircuit', activated: false },
-      { id: 'circuit_5', x: 1630, y: 370, type: 'securityCircuit', activated: false },
-      { id: 'circuit_6', x: 1980, y: 270, type: 'securityCircuit', activated: false }
+      { id: 'circuit_1', type: 'circuit', x: 400, y: 370, activated: false },
+      { id: 'circuit_2', type: 'circuit', x: 900, y: 260, activated: false },
+      { id: 'circuit_3', type: 'circuit', x: 1500, y: 370, activated: false },
+      { id: 'circuit_4', type: 'circuit', x: 2100, y: 260, activated: false },
+      { id: 'circuit_5', type: 'circuit', x: 2750, y: 370, activated: false },
+      { id: 'circuit_6', type: 'circuit', x: 3400, y: 260, activated: false }
     ],
-    pickups: [{ x: 400, y: 480, type: 'like' }, { x: 1400, y: 480, type: 'like' }],
-    enemies: [{ x: 400, y: 480, type: 'glitchBot' }, { x: 1100, y: 480, type: 'dislikeDrone' }, { x: 1700, y: 480, type: 'glitchBot' }],
-    exitPortal: { x: 2300, y: 440, w: 40, h: 80 }
+    enemies: [
+      { x: 650, y: 480, type: 'glitchBot' },
+      { x: 1750, y: 480, type: 'glitchBot' },
+      { x: 3000, y: 480, type: 'glitchBot' }
+    ],
+    exitPortal: { x: 4250, y: 440, w: 50, h: 80 }
   },
 
   18: {
-    id: 18, name: 'غرفة تبريد السيرفر', nameEn: 'Server Cooling Chamber', heroId: 'opiilz',
-    bgm: 'cyber', width: 2200, height: 600, theme: 'city', skyColor: '#00263b',
-    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'صمامات الليزر',
-    objectiveDesc: 'عطل وجمد 5 صمامات ليزرية للوصول لبرج الحظر', objectiveTarget: 5,
+    id: 18, name: 'غرفة تبريد السيرفر', nameEn: 'Server Cooling Core', heroId: 'opiilz',
+    width: 4400, height: 600, theme: 'cyber', skyColor: '#001a1a',
+    requiredSubsQuota: 220000,
+    objectiveType: 'PUZZLE_TRIGGER', objectiveTitle: 'تجميد صمامات الليزر',
+    objectiveDesc: 'جمد 5 صمامات ليزرية واجمع 220,000 مشترك لفتح بوابة البرج!', objectiveTarget: 5,
     platforms: [
-      { x: 0, y: 520, w: 2200, h: 80, type: 'roof' },
-      { x: 250, y: 390, w: 180, h: 20, type: 'holo', isOneWay: true },
-      { x: 600, y: 290, w: 190, h: 20, type: 'holo', isOneWay: true },
-      { x: 1000, y: 390, w: 180, h: 20, type: 'holo', isOneWay: true },
-      { x: 1400, y: 290, w: 190, h: 20, type: 'holo', isOneWay: true }
+      { x: 0, y: 520, w: 4400, h: 80, type: 'circuit' },
+      { x: 350, y: 390, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 900, y: 280, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 1500, y: 390, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2150, y: 280, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2800, y: 390, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 3450, y: 280, w: 240, h: 20, type: 'neonSteel', isOneWay: true }
     ],
     hazards: [],
-    interactiveObjects: [
-      { id: 'valve_1', x: 340, y: 360, type: 'laserValve', activated: false },
-      { id: 'valve_2', x: 690, y: 260, type: 'laserValve', activated: false },
-      { id: 'valve_3', x: 1090, y: 360, type: 'laserValve', activated: false },
-      { id: 'valve_4', x: 1490, y: 260, type: 'laserValve', activated: false },
-      { id: 'valve_5', x: 1800, y: 480, type: 'laserValve', activated: false }
+    pickups: [
+      { x: 400, y: 340, type: 'subCoin50k', value: 50000 },
+      { x: 950, y: 230, type: 'subCoin50k', value: 50000 },
+      { x: 1550, y: 340, type: 'subCoin60k', value: 60000 },
+      { x: 2200, y: 230, type: 'subCoin60k', value: 60000 },
+      { x: 2850, y: 340, type: 'subCoin60k', value: 60000 },
+      { x: 1800, y: 480, type: 'karak' }
     ],
-    pickups: [{ x: 450, y: 480, type: 'shawarma' }, { x: 1200, y: 480, type: 'like' }],
-    enemies: [{ x: 500, y: 480, type: 'glitchBot' }, { x: 1300, y: 480, type: 'dislikeDrone' }],
-    exitPortal: { x: 2100, y: 440, w: 40, h: 80 }
+    interactiveObjects: [
+      { id: 'valve_1', type: 'laserValve', x: 450, y: 360, activated: false },
+      { id: 'valve_2', type: 'laserValve', x: 1000, y: 250, activated: false },
+      { id: 'valve_3', type: 'laserValve', x: 1600, y: 360, activated: false },
+      { id: 'valve_4', type: 'laserValve', x: 2250, y: 250, activated: false },
+      { id: 'valve_5', type: 'laserValve', x: 2900, y: 360, activated: false }
+    ],
+    enemies: [
+      { x: 700, y: 480, type: 'eliteGuard' },
+      { x: 1900, y: 480, type: 'eliteGuard' },
+      { x: 3100, y: 480, type: 'eliteGuard' }
+    ],
+    exitPortal: { x: 4250, y: 440, w: 50, h: 80 }
   },
 
   19: {
-    id: 19, name: 'بوابة برج الحظر (تحالف الأبطال)', nameEn: 'Ban Tower Alliance', heroId: 'banderita',
-    bgm: 'cyber', width: 2600, height: 600, theme: 'bossArena', skyColor: '#2b0014',
-    objectiveType: 'KILL_COUNT', objectiveTitle: 'حراس النخبة',
-    objectiveDesc: 'اهزم 20 حارساً نخبوي بالتبديل بين مهارات الأبطال الخمسة', objectiveTarget: 20,
+    id: 19, name: 'بوابة برج الحظر (تحالف الأبطال)', nameEn: 'Ban Tower Tag-Team', heroId: 'banderita',
+    width: 4800, height: 600, theme: 'cyber', skyColor: '#1e0024',
+    requiredSubsQuota: 240000,
+    objectiveType: 'KILL_COUNT', objectiveTitle: 'سحق حراس النخبة',
+    objectiveDesc: 'اقضِ على 20 حارس نخبوي واستخدم أبطالك الخمسة واجمع 240,000 مشترك!', objectiveTarget: 20,
     platforms: [
-      { x: 0, y: 520, w: 2600, h: 80, type: 'roof' },
-      { x: 200, y: 390, w: 200, h: 20, type: 'steel', isOneWay: true },
-      { x: 550, y: 290, w: 220, h: 20, type: 'holo', isOneWay: true },
-      { x: 950, y: 390, w: 200, h: 20, type: 'steel', isOneWay: true },
-      { x: 1350, y: 290, w: 220, h: 20, type: 'holo', isOneWay: true },
-      { x: 1750, y: 390, w: 200, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4800, h: 80, type: 'circuit' },
+      { x: 300, y: 390, w: 220, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 800, y: 280, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 1400, y: 390, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2000, y: 280, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2600, y: 390, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 3200, y: 280, w: 240, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 3800, y: 390, w: 240, h: 20, type: 'neonSteel', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 400, y: 480, type: 'shawarma' }, { x: 800, y: 480, type: 'goldenButton' }, { x: 1600, y: 480, type: 'karak' }],
-    enemies: Array.from({ length: 20 }, (_, i) => ({ x: 300 + i * 110, y: 480, type: 'eliteGuard' })),
-    exitPortal: { x: 2500, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 350, y: 340, type: 'subCoin50k', value: 50000 },
+      { x: 850, y: 230, type: 'subCoin50k', value: 50000 },
+      { x: 1450, y: 340, type: 'subCoin50k', value: 50000 },
+      { x: 2050, y: 230, type: 'subCoin50k', value: 50000 },
+      { x: 2650, y: 340, type: 'subCoin50k', value: 50000 },
+      { x: 3250, y: 230, type: 'subCoin50k', value: 50000 },
+      { x: 3850, y: 340, type: 'subCoin50k', value: 50000 },
+      { x: 1700, y: 480, type: 'shawarma' },
+      { x: 3500, y: 480, type: 'karak' }
+    ],
+    enemies: Array.from({ length: 20 }, (_, i) => ({
+      x: 350 + i * 210,
+      y: 480,
+      type: 'eliteGuard'
+    })),
+    exitPortal: { x: 4650, y: 440, w: 50, h: 80 }
   },
 
   20: {
-    id: 20, name: 'المعركة الكبرى: الخوارزمية المظلمة', nameEn: 'The Dark Algorithm Final Boss', heroId: 'banderita',
-    bgm: 'boss', width: 1400, height: 600, theme: 'bossArena', skyColor: '#1f0009',
-    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'الخوارزمية المظلمة (Error 404)',
-    objectiveDesc: 'اهزم الخوارزمية المظلمة في معركة الأطوار الثلاثة واستعد المشتركين!', objectiveTarget: 1,
+    id: 20, name: 'المعركة الكبرى: الخوارزمية المظلمة', nameEn: 'The Dark Algorithm (Error 404)', heroId: 'banderita',
+    width: 4800, height: 600, theme: 'bossArena', skyColor: '#3d0014',
+    requiredSubsQuota: 250000,
+    objectiveType: 'BOSS_DEFEAT', objectiveTitle: 'كسر كود الخوارزمية (Error 404)',
+    objectiveDesc: 'اهزم الخوارزمية المظلمة عبر 3 أطوار واستعد كافة المشتركين (250,000+)!',
     platforms: [
-      { x: 0, y: 520, w: 1400, h: 80, type: 'arenaFloor' },
-      { x: 160, y: 380, w: 220, h: 20, type: 'steel', isOneWay: true },
-      { x: 460, y: 280, w: 240, h: 20, type: 'holo', isOneWay: true },
-      { x: 780, y: 280, w: 240, h: 20, type: 'holo', isOneWay: true },
-      { x: 1060, y: 380, w: 220, h: 20, type: 'steel', isOneWay: true }
+      { x: 0, y: 520, w: 4800, h: 80, type: 'circuit' },
+      { x: 400, y: 380, w: 260, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 1000, y: 260, w: 260, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 1700, y: 380, w: 280, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 2400, y: 260, w: 280, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 3200, y: 380, w: 280, h: 20, type: 'neonSteel', isOneWay: true },
+      { x: 4000, y: 260, w: 280, h: 20, type: 'neonSteel', isOneWay: true }
     ],
     hazards: [],
-    pickups: [{ x: 200, y: 340, type: 'shawarma' }, { x: 550, y: 240, type: 'like' }, { x: 850, y: 240, type: 'karak' }, { x: 1150, y: 340, type: 'goldenButton' }],
-    enemies: [],
-    bossData: { x: 950, y: 380, type: 'darkAlgorithm' },
-    exitPortal: { x: 1300, y: 440, w: 40, h: 80 }
+    pickups: [
+      { x: 450, y: 330, type: 'subDiamond50k', value: 50000 },
+      { x: 1050, y: 210, type: 'subDiamond50k', value: 50000 },
+      { x: 1750, y: 330, type: 'subDiamond50k', value: 50000 },
+      { x: 2450, y: 210, type: 'subDiamond50k', value: 50000 },
+      { x: 3250, y: 330, type: 'subDiamond50k', value: 50000 },
+      { x: 4050, y: 210, type: 'subDiamond50k', value: 50000 },
+      { x: 1200, y: 480, type: 'shawarma' },
+      { x: 2800, y: 480, type: 'karak' }
+    ],
+    enemies: [{ x: 800, y: 480, type: 'eliteGuard' }],
+    boss: { type: 'darkAlgorithm', x: 2900, y: 260 },
+    exitPortal: { x: 4650, y: 440, w: 50, h: 80 }
   }
 };
 
 class LevelManager {
   constructor() {
     this.currentStageIndex = 1;
-    this.stage = null;
+    this.stage = CAMPAIGN_STAGES[1];
     this.platforms = [];
     this.hazards = [];
     this.pickups = [];
-    this.interactiveObjects = [];
     this.enemies = [];
+    this.interactiveObjects = [];
     this.boss = null;
     this.portal = null;
-    this.animTime = 0;
+    this.midDialogueTriggered = false;
   }
 
   loadStage(stageIndex) {
     this.currentStageIndex = stageIndex;
-    const data = CAMPAIGN_STAGES[stageIndex] || CAMPAIGN_STAGES[1];
-    this.stage = data;
-    this.platforms = JSON.parse(JSON.stringify(data.platforms || []));
-    this.hazards = JSON.parse(JSON.stringify(data.hazards || []));
-    this.portal = data.exitPortal ? { ...data.exitPortal } : null;
+    this.stage = CAMPAIGN_STAGES[stageIndex] || CAMPAIGN_STAGES[1];
+    this.midDialogueTriggered = false;
 
-    this.interactiveObjects = (data.interactiveObjects || []).map(obj => ({ ...obj }));
-    this.pickups = (data.pickups || []).map(p => ({ ...p, collected: false, bobOffset: Math.random() * Math.PI * 2 }));
-    this.enemies = (data.enemies || []).map(e => new window.Enemy(e.x, e.y, e.type));
+    this.platforms = JSON.parse(JSON.stringify(this.stage.platforms || []));
+    this.hazards = JSON.parse(JSON.stringify(this.stage.hazards || []));
+    this.pickups = JSON.parse(JSON.stringify(this.stage.pickups || []));
+    this.interactiveObjects = JSON.parse(JSON.stringify(this.stage.interactiveObjects || []));
+    this.portal = this.stage.exitPortal ? JSON.parse(JSON.stringify(this.stage.exitPortal)) : null;
 
-    if (data.bossData) {
-      this.boss = new window.CampaignBoss(data.bossData.x, data.bossData.y, data.bossData.type);
-    } else {
-      this.boss = null;
+    // Instantiate Enemies
+    this.enemies = [];
+    if (this.stage.enemies) {
+      for (const e of this.stage.enemies) {
+        this.enemies.push(new window.Enemy(e.type, e.x, e.y));
+      }
     }
 
-    if (window.audio) window.audio.playBgmTrack(data.bgm || 'city');
+    // Instantiate Boss
+    this.boss = null;
+    if (this.stage.boss) {
+      this.boss = new window.Boss(this.stage.boss.type, this.stage.boss.x, this.stage.boss.y);
+    }
+
+    // Bind Objective
     if (window.game && window.game.objectives) {
-      window.game.objectives.initStageObjective(data);
+      window.game.objectives.initObjective(this.stage);
     }
   }
 
   update(player) {
-    this.animTime += 0.05;
+    // Check Pickups
+    for (let i = this.pickups.length - 1; i >= 0; i--) {
+      const p = this.pickups[i];
+      if (player.x + player.width > p.x - 16 && player.x < p.x + 16 &&
+          player.y + player.height > p.y - 16 && player.y < p.y + 16) {
 
-    // Pickups check
-    for (const p of this.pickups) {
-      if (p.collected) continue;
-      const pDist = Math.hypot((player.x + player.width / 2) - p.x, (player.y + player.height / 2) - p.y);
-      if (pDist < 34) {
-        p.collected = true;
-        this.applyPickup(p, player);
+        if (p.type.startsWith('subCoin') || p.type.startsWith('subDiamond')) {
+          const subs = p.value || 10000;
+          if (window.game) window.game.addSubscribers(subs);
+          if (window.audio) window.audio.sfxCoin();
+          window.particles.burst(p.x, p.y, 10, ['#ffd700', '#ffffff'], 2, 5);
+          window.particles.addFloatingText(p.x, p.y - 10, `+${subs.toLocaleString()} 👥`, '#ffd700', 13);
+        } else if (p.type === 'potatoSack') {
+          if (window.game && window.game.objectives) window.game.objectives.recordCollect('potatoSack');
+          if (window.audio) window.audio.sfxCoin();
+          window.particles.burst(p.x, p.y, 8, ['#f39c12', '#ffd700'], 1, 4);
+        } else if (p.type === 'dataBattery') {
+          if (window.game && window.game.objectives) window.game.objectives.recordCollect('dataBattery');
+          if (window.audio) window.audio.sfxCoin();
+          window.particles.burst(p.x, p.y, 10, ['#00d2d3', '#ffffff'], 2, 5);
+        } else if (p.type === 'secretKey') {
+          if (window.game && window.game.objectives) window.game.objectives.recordCollect('secretKey');
+          if (window.audio) window.audio.sfxCoin();
+          window.particles.burst(p.x, p.y, 12, ['#9b59b6', '#ffd700'], 2, 5);
+        } else if (p.type === 'redstoneIngot') {
+          if (window.game && window.game.objectives) window.game.objectives.recordCollect('redstoneIngot');
+          if (window.audio) window.audio.sfxCoin();
+          window.particles.burst(p.x, p.y, 10, ['#ff4757', '#ffd700'], 2, 5);
+        } else if (p.type === 'shawarma') {
+          player.heal(40);
+        } else if (p.type === 'karak') {
+          player.heal(60);
+          player.addEnergy(30);
+        }
+
+        this.pickups.splice(i, 1);
       }
     }
 
-    // Hazards check
-    for (const h of this.hazards) {
-      if (player.x + player.width > h.x && player.x < h.x + h.w &&
-          player.y + player.height > h.y && player.y < h.y + h.h) {
-        // oPiiLz security engineer ignores traps
-        if (player.heroData.hasSecurityEngineer && (h.type === 'laserTrap' || h.type === 'mine')) {
-          continue;
-        }
-        player.takeDamage(25, -player.facing);
-        if (h.type === 'glitchPit' || h.type === 'lavaPit') {
-          player.vy = -11;
-          player.y = h.y - player.height - 20;
-        }
+    // Check Mid-Level Story Dialogue Trigger
+    if (!this.midDialogueTriggered && this.stage.midDialogue && player.x >= this.stage.midDialogue.triggerX) {
+      this.midDialogueTriggered = true;
+      if (window.game && window.game.dialogue) {
+        window.game.dialogue.startCustomDialogue(this.stage.midDialogue.lines, () => {
+          if (window.game) window.game.state = 'playing';
+        });
       }
     }
   }
 
-  applyPickup(pickup, player) {
-    if (pickup.type === 'potatoSack' || pickup.type === 'redstoneIngot' || pickup.type === 'cipherKey' || pickup.type === 'dataBattery') {
-      window.audio.sfxCoin();
-      if (window.game) {
-        window.game.addSubscribers(150);
-        window.game.addScore(150);
-        if (window.game.objectives) window.game.objectives.recordItemCollected(pickup.type);
-      }
-      player.addEnergy(10);
-      window.particles.burst(pickup.x, pickup.y, 10, ['#ffd700', '#f5b041', '#ffffff'], 2, 5);
-      window.particles.addFloatingText(pickup.x, pickup.y - 10, '+1 QUEST ITEM', '#ffd700', 13, '★');
-    } else if (pickup.type === 'like') {
-      window.audio.sfxEnergyGem();
-      player.addEnergy(40);
-      window.game.addScore(150);
-      window.particles.burst(pickup.x, pickup.y, 8, ['#00d2d3', '#54a0ff'], 2, 5);
-      window.particles.addFloatingText(pickup.x, pickup.y - 10, '+ENERGY', '#00d2d3', 13, '👍');
-    } else if (pickup.type === 'shawarma') {
-      player.heal(40);
-      window.game.addScore(200);
-      window.particles.burst(pickup.x, pickup.y, 10, ['#2ed573', '#ff9f43'], 2, 5);
-      window.particles.addFloatingText(pickup.x, pickup.y - 10, 'شاورما! +40 HP', '#2ed573', 14, '🌯');
-    } else if (pickup.type === 'karak') {
-      player.heal(30);
-      player.addEnergy(25);
-      window.game.addScore(180);
-      window.particles.burst(pickup.x, pickup.y, 10, ['#ff9f43', '#feca57'], 2, 5);
-      window.particles.addFloatingText(pickup.x, pickup.y - 10, 'شاي كرك! +BUFF', '#ffa502', 14, '☕');
-    } else if (pickup.type === 'goldenButton') {
-      window.audio.sfxVictory();
-      window.game.addSubscribers(1000);
-      window.game.addScore(1000);
-      player.heal(100);
-      player.addEnergy(100);
-      player.invulnerableTimer = 180;
-      window.particles.burst(pickup.x, pickup.y, 30, ['#ffd700', '#ffffff'], 3, 9);
-      window.particles.addFloatingText(pickup.x, pickup.y - 20, 'الدرع الذهبي! +1,000 SUBS!', '#ffd700', 16, '🏆');
-    }
-  }
-
-  drawBackground(ctx, cameraX, cameraY, canvasWidth, canvasHeight) {
-    const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-    grad.addColorStop(0, this.stage.skyColor || '#0a081e');
-    grad.addColorStop(1, '#05030a');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-    // Parallax Buildings & Clouds
+  drawBackground(ctx, cameraX, cameraY, width, height) {
     ctx.save();
-    const pX = -(cameraX * 0.2) % 300;
-    ctx.fillStyle = 'rgba(24, 18, 43, 0.7)';
-    for (let i = -1; i < (canvasWidth / 60) + 6; i++) {
-      const bh = 140 + (Math.sin(i * 99) * 0.5 + 0.5) * 120;
-      ctx.fillRect(i * 60 + pX, canvasHeight - bh - 80, 50, bh);
+    ctx.fillStyle = this.stage.skyColor || '#070514';
+    ctx.fillRect(0, 0, width, height);
+
+    // Parallax City / Background elements
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    for (let i = 0; i < 15; i++) {
+      const bx = ((i * 320) - (cameraX * 0.2)) % (width + 400);
+      ctx.fillRect(bx - 100, 180, 160, 360);
     }
     ctx.restore();
   }
@@ -550,83 +910,78 @@ class LevelManager {
     for (const p of this.platforms) {
       const px = Math.round(p.x - cameraX);
       const py = Math.round(p.y - cameraY);
-      ctx.fillStyle = '#1e272e';
-      ctx.fillRect(px, py, p.w, p.h);
-      ctx.fillStyle = '#00d2d3';
-      ctx.fillRect(px, py, p.w, 4);
+
+      ctx.save();
+      if (p.type === 'roof' || p.type === 'stone' || p.type === 'oreStone' || p.type === 'circuit') {
+        ctx.fillStyle = '#1e1a38';
+        ctx.fillRect(px, py, p.w, p.h);
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(px, py, p.w, 4);
+      } else if (p.type === 'steel' || p.type === 'neonSteel') {
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(px, py, p.w, p.h);
+        ctx.fillStyle = '#00d2d3';
+        ctx.fillRect(px, py, p.w, 3);
+      } else {
+        ctx.fillStyle = 'rgba(0, 210, 211, 0.4)';
+        ctx.fillRect(px, py, p.w, p.h);
+        ctx.fillStyle = '#00d2d3';
+        ctx.fillRect(px, py, p.w, 2);
+      }
+      ctx.restore();
     }
 
-    // 2. Draw Interactive Objects (Lanterns, Mirrors, Circuits, Valves)
+    // 2. Draw Interactive Objects (Lanterns, Mirrors, Circuits)
     for (const obj of this.interactiveObjects) {
       const ox = Math.round(obj.x - cameraX);
       const oy = Math.round(obj.y - cameraY);
+
       ctx.save();
-
       if (obj.type === 'teaLantern') {
-        ctx.fillStyle = obj.activated ? '#ffd700' : '#4b4b4b';
-        ctx.fillRect(ox - 10, oy - 14, 20, 28);
-        ctx.fillStyle = obj.activated ? '#f39c12' : '#2c3e50';
-        ctx.fillRect(ox - 6, oy - 8, 12, 16);
+        ctx.fillStyle = obj.activated ? '#ffd700' : '#57606f';
+        ctx.fillRect(ox - 10, oy - 20, 20, 24);
+        if (obj.activated) {
+          ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+          ctx.beginPath();
+          ctx.arc(ox, oy - 8, 30, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else if (obj.type === 'mirror') {
-        ctx.fillStyle = obj.activated ? '#ffd700' : '#747d8c';
-        ctx.fillRect(ox - 12, oy - 16, 24, 32);
-        ctx.fillStyle = '#badc58';
-        ctx.fillRect(ox - 8, oy - 12, 16, 24);
-      } else if (obj.type === 'securityCircuit') {
+        ctx.fillStyle = obj.activated ? '#00d2d3' : '#a4b0be';
+        ctx.fillRect(ox - 6, oy - 22, 12, 28);
+      } else if (obj.type === 'circuit' || obj.type === 'laserValve') {
         ctx.fillStyle = obj.activated ? '#2ed573' : '#ff4757';
-        ctx.fillRect(ox - 12, oy - 12, 24, 24);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '10px monospace';
-        ctx.fillText(obj.activated ? 'OK' : 'LOCK', ox - 10, oy + 4);
-      } else if (obj.type === 'laserValve') {
-        ctx.fillStyle = obj.activated ? '#00d2d3' : '#e74c3c';
-        ctx.beginPath();
-        ctx.arc(ox, oy, 14, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(ox - 10, oy - 10, 20, 20);
       }
-
       ctx.restore();
     }
 
     // 3. Draw Pickups
     for (const p of this.pickups) {
-      if (p.collected) continue;
-      const bobY = Math.sin(this.animTime * 3 + p.bobOffset) * 4;
       const px = Math.round(p.x - cameraX);
-      const py = Math.round(p.y + bobY - cameraY);
+      const py = Math.round(p.y - cameraY);
 
       ctx.save();
-      if (p.type === 'potatoSack') {
-        ctx.fillStyle = '#f5b041';
-        ctx.beginPath();
-        ctx.ellipse(px, py, 12, 10, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#d35400';
-        ctx.fillRect(px - 3, py - 14, 6, 5);
-      } else if (p.type === 'redstoneIngot') {
-        ctx.fillStyle = '#e74c3c';
-        ctx.fillRect(px - 10, py - 6, 20, 12);
-        ctx.fillStyle = '#ff7675';
-        ctx.fillRect(px - 8, py - 4, 16, 4);
-      } else if (p.type === 'cipherKey') {
+      if (p.type.startsWith('subCoin') || p.type.startsWith('subDiamond')) {
         ctx.fillStyle = '#ffd700';
-        ctx.fillRect(px - 4, py - 12, 8, 24);
-        ctx.fillRect(px - 10, py - 12, 20, 6);
-      } else if (p.type === 'dataBattery') {
-        ctx.fillStyle = '#00d2d3';
-        ctx.fillRect(px - 8, py - 12, 16, 24);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px - 4, py - 16, 8, 4);
-      } else if (p.type === 'like') {
-        ctx.fillStyle = '#00d2d3';
         ctx.beginPath();
-        ctx.moveTo(px, py - 10); ctx.lineTo(px + 8, py); ctx.lineTo(px, py + 10); ctx.lineTo(px - 8, py);
-        ctx.closePath(); ctx.fill();
+        ctx.arc(px, py, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 9px "Press Start 2P", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('▶', px, py + 3);
+      } else if (p.type === 'potatoSack') {
+        ctx.fillStyle = '#f5cd79';
+        ctx.fillRect(px - 10, py - 10, 20, 20);
       } else if (p.type === 'shawarma') {
         ctx.fillStyle = '#f5cd79';
         ctx.fillRect(px - 10, py - 6, 20, 12);
       } else if (p.type === 'karak') {
         ctx.fillStyle = '#ffffff';
+        ctx.fillRect(px - 8, py - 8, 16, 16);
+      } else {
+        ctx.fillStyle = '#2ed573';
         ctx.fillRect(px - 8, py - 8, 16, 16);
       }
       ctx.restore();
@@ -635,18 +990,23 @@ class LevelManager {
     // 4. Draw Exit Portal
     if (this.portal) {
       const isQuestDone = window.game && window.game.objectives && window.game.objectives.isCompleted;
+      const hasEnoughSubs = window.game && (window.game.levelSubscribers >= this.stage.requiredSubsQuota);
+      const isFullyUnlocked = isQuestDone && hasEnoughSubs;
+
       const ptx = Math.round(this.portal.x - cameraX);
       const pty = Math.round(this.portal.y - cameraY);
 
       ctx.save();
-      ctx.fillStyle = isQuestDone ? 'rgba(46, 213, 115, 0.7)' : 'rgba(255, 71, 87, 0.3)';
+      ctx.fillStyle = isFullyUnlocked ? 'rgba(46, 213, 115, 0.7)' : 'rgba(255, 71, 87, 0.3)';
       ctx.fillRect(ptx - 10, pty - 10, 60, 100);
-      ctx.fillStyle = isQuestDone ? '#2ed573' : '#ff4757';
+      ctx.fillStyle = isFullyUnlocked ? '#2ed573' : '#ff4757';
       ctx.fillRect(ptx, pty, 40, 80);
+
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px "Cairo", sans-serif';
+      ctx.font = 'bold 10px "Cairo", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(isQuestDone ? 'البوابة مفتوحة' : 'أنجز المهمة!', ptx + 20, pty - 12);
+      const portalLabel = isFullyUnlocked ? 'البوابة مفتوحة' : 'اجمع المشتركين!';
+      ctx.fillText(portalLabel, ptx + 20, pty - 12);
       ctx.restore();
     }
   }
