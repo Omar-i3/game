@@ -1,77 +1,76 @@
 // ============================================================================
-// Arab Gamers: Pixel Legends - Arcade UI, Menus, HUD & Mobile Controls
+// Arab Gamers: The 20-Stage Pixel Campaign - UI & Campaign Map Manager
 // ============================================================================
 
 class UIManager {
   constructor() {
     this.selectedHeroIndex = 0;
     this.heroKeys = ['banderita', 'mlzlz', 'ocmz', 'abuAbed', 'opiilz'];
+    this.selectedStageIndex = 1;
+    this.unlockedStage = 20; // All 20 stages unlocked for immediate playability
+
+    // DOM Elements
     this.hudElement = document.getElementById('hud');
-    this.characterSelectModal = document.getElementById('character-select-modal');
+    this.campaignMapModal = document.getElementById('campaign-map-modal');
+    this.weaponSelectModal = document.getElementById('weapon-select-modal');
+    this.dialogueModal = document.getElementById('dialogue-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
     this.victoryModal = document.getElementById('victory-modal');
     this.pauseModal = document.getElementById('pause-modal');
     this.mainMenuModal = document.getElementById('main-menu-modal');
-    this.touchControls = document.getElementById('touch-controls');
 
-    this.initHeroSelectUI();
+    this.initCampaignMapUI();
     this.setupEventListeners();
   }
 
-  initHeroSelectUI() {
-    const grid = document.getElementById('hero-cards-grid');
+  initCampaignMapUI() {
+    const grid = document.getElementById('campaign-stages-grid');
     if (!grid) return;
 
     grid.innerHTML = '';
-    this.heroKeys.forEach((key, index) => {
-      const hero = window.HERO_DATA[key];
+    for (let i = 1; i <= 20; i++) {
+      const stage = window.CAMPAIGN_STAGES[i];
+      const hero = window.HERO_DATA[stage.heroId] || window.HERO_DATA.banderita;
+      const isBoss = (i === 4 || i === 8 || i === 12 || i === 16 || i === 20);
+
       const card = document.createElement('div');
-      card.className = `hero-card ${index === 0 ? 'selected' : ''}`;
-      card.dataset.hero = key;
+      card.className = `stage-card ${i === 1 ? 'selected' : ''} ${isBoss ? 'boss-stage' : ''}`;
+      card.dataset.stage = i;
       card.innerHTML = `
-        <div class="hero-avatar-frame" style="border-color: ${hero.avatarBorder}">
-          <div class="hero-pixel-avatar avatar-${key}"></div>
+        <div class="stage-num">${i}</div>
+        <div class="stage-details">
+          <span class="stage-title">${stage.name}</span>
+          <span class="stage-hero-badge" style="color: ${hero.color}">👤 ${hero.name}</span>
+          <span class="stage-quest-brief">${stage.objectiveTitle}</span>
         </div>
-        <div class="hero-info">
-          <div class="hero-names">
-            <span class="hero-ar-name">${hero.name}</span>
-            <span class="hero-en-name">${hero.nameEn}</span>
-          </div>
-          <div class="hero-class">${hero.class}</div>
-          <div class="hero-stat-bars">
-            <div class="stat-row"><span>HP</span><div class="bar-bg"><div class="bar-fill" style="width: ${(hero.maxHp/150)*100}%; background: #e74c3c"></div></div></div>
-            <div class="stat-row"><span>ATK</span><div class="bar-bg"><div class="bar-fill" style="width: ${(hero.attackPower/35)*100}%; background: #e67e22"></div></div></div>
-            <div class="stat-row"><span>SPD</span><div class="bar-bg"><div class="bar-fill" style="width: ${(hero.speed/6.5)*100}%; background: #2ecc71"></div></div></div>
-            <div class="stat-row"><span>DEF</span><div class="bar-bg"><div class="bar-fill" style="width: ${(hero.defense/30)*100}%; background: #3498db"></div></div></div>
-          </div>
-          <div class="hero-special-box">
-            <span class="special-label">⚡ ${hero.specialName}</span>
-            <p class="special-desc">${hero.specialDesc}</p>
-          </div>
-        </div>
+        ${isBoss ? '<span class="boss-tag">👑 BOSS</span>' : ''}
       `;
 
       card.addEventListener('click', () => {
-        this.selectHero(index);
+        this.selectStage(i);
       });
 
       grid.appendChild(card);
-    });
+    }
   }
 
-  selectHero(index) {
-    this.selectedHeroIndex = index;
-    window.audio.sfxMenuSelect();
+  selectStage(stageIndex) {
+    this.selectedStageIndex = stageIndex;
+    if (window.audio) window.audio.sfxMenuSelect();
 
-    const cards = document.querySelectorAll('.hero-card');
+    const cards = document.querySelectorAll('.stage-card');
     cards.forEach((c, idx) => {
-      c.classList.toggle('selected', idx === index);
+      c.classList.toggle('selected', idx + 1 === stageIndex);
     });
 
-    const heroKey = this.heroKeys[index];
-    if (window.game && window.game.player) {
-      window.game.player.setHero(heroKey);
-      this.updateHUD(window.game.player);
+    const stage = window.CAMPAIGN_STAGES[stageIndex];
+    const previewEl = document.getElementById('map-stage-preview');
+    if (previewEl && stage) {
+      previewEl.innerHTML = `
+        <h3>مرحلة ${stageIndex}: ${stage.name} (${stage.nameEn})</h3>
+        <p class="preview-quest"><strong>المهمة:</strong> ${stage.objectiveDesc}</p>
+        <p class="preview-hero"><strong>البطل المخصص:</strong> ${window.HERO_DATA[stage.heroId].name} (${window.HERO_DATA[stage.heroId].class})</p>
+      `;
     }
   }
 
@@ -80,43 +79,59 @@ class UIManager {
     const btnStart = document.getElementById('btn-start-game');
     if (btnStart) {
       btnStart.addEventListener('click', () => {
-        window.audio.ensureContext();
-        window.audio.sfxMenuConfirm();
-        this.showScreen('charSelect');
+        if (window.audio) {
+          window.audio.ensureContext();
+          window.audio.sfxMenuConfirm();
+        }
+        this.showScreen('campaignMap');
       });
     }
 
-    const btnConfirmHero = document.getElementById('btn-confirm-hero');
-    if (btnConfirmHero) {
-      btnConfirmHero.addEventListener('click', () => {
-        window.audio.sfxMenuConfirm();
-        const chosenHero = this.heroKeys[this.selectedHeroIndex];
-        window.game.startNewGame(chosenHero);
-        this.showScreen('game');
+    const btnLaunchStage = document.getElementById('btn-launch-stage');
+    if (btnLaunchStage) {
+      btnLaunchStage.addEventListener('click', () => {
+        if (window.audio) window.audio.sfxMenuConfirm();
+        const stage = window.CAMPAIGN_STAGES[this.selectedStageIndex];
+
+        // If stage is Banderita, open Weapon Selection modal first
+        if (stage.heroId === 'banderita') {
+          this.showScreen('weaponSelect');
+        } else {
+          window.game.startStage(this.selectedStageIndex, stage.heroId);
+        }
+      });
+    }
+
+    // Banderita Weapon Choice buttons
+    const btnChooseTamees = document.getElementById('btn-weapon-tamees');
+    if (btnChooseTamees) {
+      btnChooseTamees.addEventListener('click', () => {
+        if (window.audio) window.audio.sfxMenuConfirm();
+        window.game.startStage(this.selectedStageIndex, 'banderita', 'tamees');
+      });
+    }
+
+    const btnChoosePotato = document.getElementById('btn-weapon-potato');
+    if (btnChoosePotato) {
+      btnChoosePotato.addEventListener('click', () => {
+        if (window.audio) window.audio.sfxMenuConfirm();
+        window.game.startStage(this.selectedStageIndex, 'banderita', 'potato');
       });
     }
 
     const btnRetry = document.getElementById('btn-retry');
     if (btnRetry) {
       btnRetry.addEventListener('click', () => {
-        window.audio.sfxMenuConfirm();
-        window.game.restartLevel();
-        this.showScreen('game');
+        if (window.audio) window.audio.sfxMenuConfirm();
+        window.game.restartStage();
       });
     }
 
-    const btnPlayAgain = document.getElementById('btn-play-again');
-    if (btnPlayAgain) {
-      btnPlayAgain.addEventListener('click', () => {
-        window.audio.sfxMenuConfirm();
-        this.showScreen('charSelect');
-      });
-    }
-
-    const btnResume = document.getElementById('btn-resume');
-    if (btnResume) {
-      btnResume.addEventListener('click', () => {
-        window.game.togglePause();
+    const btnBackToMap = document.getElementById('btn-back-to-map');
+    if (btnBackToMap) {
+      btnBackToMap.addEventListener('click', () => {
+        if (window.audio) window.audio.sfxMenuConfirm();
+        this.showScreen('campaignMap');
       });
     }
 
@@ -129,26 +144,22 @@ class UIManager {
       });
     }
 
-    // Touch on-screen buttons
-    this.bindTouchButton('btn-touch-left', (pressed) => {
-      window.game.inputs.left = pressed;
-    });
-    this.bindTouchButton('btn-touch-right', (pressed) => {
-      window.game.inputs.right = pressed;
-    });
-    this.bindTouchButton('btn-touch-jump', (pressed) => {
-      if (pressed) window.game.handleJumpPress();
-    });
-    this.bindTouchButton('btn-touch-attack', (pressed) => {
-      if (pressed) window.game.handleAttackPress();
-    });
-    this.bindTouchButton('btn-touch-special', (pressed) => {
-      if (pressed) window.game.handleSpecialPress();
-    });
-    this.bindTouchButton('btn-touch-switch', (pressed) => {
-      if (pressed) {
+    const btnResume = document.getElementById('btn-resume');
+    if (btnResume) {
+      btnResume.addEventListener('click', () => window.game.togglePause());
+    }
+
+    // Touch controls
+    this.bindTouchButton('btn-touch-left', (p) => { window.game.inputs.left = p; });
+    this.bindTouchButton('btn-touch-right', (p) => { window.game.inputs.right = p; });
+    this.bindTouchButton('btn-touch-jump', (p) => { if (p) window.game.handleJumpPress(); });
+    this.bindTouchButton('btn-touch-attack', (p) => { if (p) window.game.handleAttackPress(); });
+    this.bindTouchButton('btn-touch-dash', (p) => { if (p) window.game.handleDashPress(); });
+    this.bindTouchButton('btn-touch-special', (p) => { if (p) window.game.handleSpecialPress(); });
+    this.bindTouchButton('btn-touch-switch', (p) => {
+      if (p) {
         this.selectedHeroIndex = (this.selectedHeroIndex + 1) % this.heroKeys.length;
-        this.selectHero(this.selectedHeroIndex);
+        window.game.switchHero(this.selectedHeroIndex);
       }
     });
   }
@@ -156,19 +167,8 @@ class UIManager {
   bindTouchButton(id, callback) {
     const el = document.getElementById(id);
     if (!el) return;
-
-    const startHandler = (e) => {
-      e.preventDefault();
-      callback(true);
-      el.classList.add('active');
-    };
-
-    const endHandler = (e) => {
-      e.preventDefault();
-      callback(false);
-      el.classList.remove('active');
-    };
-
+    const startHandler = (e) => { e.preventDefault(); callback(true); el.classList.add('active'); };
+    const endHandler = (e) => { e.preventDefault(); callback(false); el.classList.remove('active'); };
     el.addEventListener('touchstart', startHandler, { passive: false });
     el.addEventListener('touchend', endHandler, { passive: false });
     el.addEventListener('mousedown', startHandler);
@@ -178,17 +178,17 @@ class UIManager {
 
   showScreen(screenName) {
     if (this.mainMenuModal) this.mainMenuModal.classList.toggle('hidden', screenName !== 'menu');
-    if (this.characterSelectModal) this.characterSelectModal.classList.toggle('hidden', screenName !== 'charSelect');
+    if (this.campaignMapModal) this.campaignMapModal.classList.toggle('hidden', screenName !== 'campaignMap');
+    if (this.weaponSelectModal) this.weaponSelectModal.classList.toggle('hidden', screenName !== 'weaponSelect');
     if (this.gameOverModal) this.gameOverModal.classList.toggle('hidden', screenName !== 'gameOver');
     if (this.victoryModal) this.victoryModal.classList.toggle('hidden', screenName !== 'victory');
     if (this.pauseModal) this.pauseModal.classList.toggle('hidden', screenName !== 'pause');
-    if (this.hudElement) this.hudElement.classList.toggle('hidden', screenName !== 'game' && screenName !== 'pause');
+    if (this.hudElement) this.hudElement.classList.toggle('hidden', screenName !== 'game' && screenName !== 'pause' && screenName !== 'dialogue');
   }
 
   updateHUD(player) {
     if (!player) return;
 
-    // Active Hero Avatar & Info
     const avatarEl = document.getElementById('hud-avatar');
     if (avatarEl) {
       avatarEl.className = `hud-avatar avatar-${player.heroId}`;
@@ -200,7 +200,6 @@ class UIManager {
       heroNameEl.textContent = `${player.heroData.name} (${player.heroData.nameEn})`;
     }
 
-    // Health Bar
     const hpFill = document.getElementById('hud-hp-fill');
     const hpText = document.getElementById('hud-hp-text');
     if (hpFill && hpText) {
@@ -209,7 +208,6 @@ class UIManager {
       hpText.textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
     }
 
-    // Energy / Ultimate Bar
     const energyFill = document.getElementById('hud-energy-fill');
     const energyText = document.getElementById('hud-energy-text');
     const ultStatus = document.getElementById('hud-ult-status');
@@ -233,23 +231,18 @@ class UIManager {
       }
     }
 
-    // Subs & Score Counter
     const subsEl = document.getElementById('hud-subs-counter');
-    if (subsEl && window.game) {
-      subsEl.textContent = Number(window.game.subscribers).toLocaleString();
-    }
+    if (subsEl && window.game) subsEl.textContent = Number(window.game.subscribers).toLocaleString();
 
     const scoreEl = document.getElementById('hud-score-counter');
-    if (scoreEl && window.game) {
-      scoreEl.textContent = Number(window.game.score).toLocaleString();
-    }
+    if (scoreEl && window.game) scoreEl.textContent = Number(window.game.score).toLocaleString();
 
     const levelEl = document.getElementById('hud-level-title');
-    if (levelEl && window.game && window.game.levelManager && window.game.levelManager.level) {
-      levelEl.textContent = `مرحلة ${window.game.levelManager.currentLevelIndex}: ${window.game.levelManager.level.name}`;
+    if (levelEl && window.game && window.game.levelManager && window.game.levelManager.stage) {
+      levelEl.textContent = `مرحلة ${window.game.levelManager.currentStageIndex}: ${window.game.levelManager.stage.name}`;
     }
 
-    // Boss Health Bar in Level 3
+    // Boss Health Bar
     const bossHud = document.getElementById('boss-hud-bar');
     if (bossHud) {
       const boss = window.game ? window.game.levelManager.boss : null;
@@ -259,7 +252,7 @@ class UIManager {
         const bossPct = (boss.hp / boss.maxHp) * 100;
         if (bossFill) bossFill.style.width = `${Math.max(0, bossPct)}%`;
         const bossName = document.getElementById('boss-hud-name');
-        if (bossName) bossName.textContent = `الزعيم الشرير "الباند" (Phase ${boss.phase})`;
+        if (bossName) bossName.textContent = `${boss.name} (Phase ${boss.phase})`;
       } else {
         bossHud.classList.add('hidden');
       }
@@ -267,7 +260,7 @@ class UIManager {
   }
 
   showGameOver(stats) {
-    window.audio.sfxGameOver();
+    if (window.audio) window.audio.sfxGameOver();
     const subStat = document.getElementById('gameover-subs');
     const scoreStat = document.getElementById('gameover-score');
     if (subStat) subStat.textContent = Number(stats.subs).toLocaleString();
@@ -276,8 +269,8 @@ class UIManager {
   }
 
   showVictory(stats) {
-    window.audio.sfxVictory();
-    window.particles.spawnConfetti(window.game.canvas.width, window.game.canvas.height, 120);
+    if (window.audio) window.audio.sfxVictory();
+    if (window.particles) window.particles.spawnConfetti(window.game.canvas.width, window.game.canvas.height, 150);
 
     const subStat = document.getElementById('victory-subs');
     const scoreStat = document.getElementById('victory-score');
@@ -286,16 +279,8 @@ class UIManager {
 
     if (subStat) subStat.textContent = Number(stats.subs).toLocaleString();
     if (scoreStat) scoreStat.textContent = Number(stats.score).toLocaleString();
-    if (heroStat) heroStat.textContent = stats.heroName;
-
-    // Calculate Rank S / A / B
-    let rank = 'A';
-    if (stats.score > 8000 && stats.subs > 4000) rank = 'S+ (أسطوري)';
-    else if (stats.score > 5000) rank = 'S (محترف)';
-    else if (stats.score > 3000) rank = 'A (بطل)';
-    else rank = 'B (جيد)';
-
-    if (rankStat) rankStat.textContent = rank;
+    if (heroStat) heroStat.textContent = stats.heroName || 'أساطير اليوتيوب';
+    if (rankStat) rankStat.textContent = 'S+ (أسطوري خارق)';
     this.showScreen('victory');
   }
 }

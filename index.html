@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Arab Gamers: Pixel Legends | أساطير البكسل</title>
-  <meta name="description" content="لعبة أكشن ومنصات ريترو بكسل آرت تضم أشهر يوتيوبرز الجيمنج العرب: بندريتا، ملزلز، أوسمز، أبو عابد، وأوبلز!">
+  <title>أساطير اليوتيوب: حرب الخوارزمية المظلمة | Arab Gamers: 20-Stage Pixel Campaign</title>
+  <meta name="description" content="لعبة أكشن ومنصات ريترو بكسل آرت من 20 مرحلة ملحمية تضم أساطير الجيمنج العرب في مواجهة الخوارزمية المظلمة!">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 
-  <!-- Google Fonts: Retro Arcade + Modern Arabic Font -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -15,26 +15,26 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Retro CRT Scanline & Glow Layer -->
+  <!-- CRT Scanline & Glow Layer -->
   <div class="crt-overlay"></div>
 
   <main class="arcade-wrapper" id="arcade-wrapper">
     <!-- Arcade Cabinet Header -->
     <header class="arcade-header">
       <div class="logo-group">
-        <span class="arcade-badge">ARAB GAMING LEGENDS</span>
-        <h1 class="main-title">أساطير البكسل <span class="en-sub">PIXEL LEGENDS</span></h1>
+        <span class="arcade-badge">ARAB GAMERS CAMPAIGN (20 STAGES)</span>
+        <h1 class="main-title">أساطير اليوتيوب <span class="en-sub">DARK ALGORITHM WAR</span></h1>
       </div>
       <div class="header-controls">
         <button id="btn-toggle-sound" class="btn-retro-mini" aria-label="Toggle Sound">🔊 الصوت: يعمل</button>
       </div>
     </header>
 
-    <!-- Game Screen Container -->
+    <!-- Game Viewport Container -->
     <div class="game-viewport-container" id="game-viewport-container">
       <canvas id="game-canvas"></canvas>
 
-      <!-- In-Game Arcade Top HUD Overlay -->
+      <!-- In-Game Top HUD & Quest Tracker Overlay -->
       <div id="hud" class="hud-overlay hidden">
         <div class="hud-left">
           <!-- Active Hero Profile & Health -->
@@ -47,7 +47,7 @@
                 <div class="hud-bar-track hp-track">
                   <div id="hud-hp-fill" class="hud-bar-fill hp-fill" style="width: 100%"></div>
                 </div>
-                <span id="hud-hp-text" class="hud-bar-val">150 / 150</span>
+                <span id="hud-hp-text" class="hud-bar-val">160 / 160</span>
               </div>
               <div class="hud-bar-container">
                 <div class="hud-bar-label">ULT</div>
@@ -61,33 +61,36 @@
         </div>
 
         <div class="hud-center">
-          <div id="hud-level-title" class="hud-level-title">مرحلة 1: يوتيوب سيتي</div>
-          <div id="hud-ult-status" class="hud-ult-status">غضبة البطاطا</div>
+          <div id="hud-level-title" class="hud-level-title">مرحلة 1: شرارة الصدمة</div>
+          <div id="hud-ult-status" class="hud-ult-status">إعصار الغضب الناري</div>
         </div>
 
         <div class="hud-right">
-          <!-- Live Subscribers & High Score Counter -->
+          <!-- Quest Tracker Box -->
+          <div id="hud-quest-box" class="hud-quest-box">
+            <div class="quest-header">
+              <span class="quest-icon">🎯</span>
+              <span id="hud-quest-title" class="quest-title">المهمة المطلوبة</span>
+            </div>
+            <div id="hud-quest-desc" class="quest-desc">اجمع 15 كيس بطاطس</div>
+            <div id="hud-quest-progress" class="quest-progress">التقدم: 0 / 15</div>
+          </div>
+
+          <!-- Subs Counter -->
           <div class="hud-stat-box">
             <span class="stat-icon">▶</span>
             <div class="stat-val-group">
-              <span class="stat-title">المشتركون (SUBS)</span>
+              <span class="stat-title">المشتركون</span>
               <span id="hud-subs-counter" class="stat-number">1,000</span>
-            </div>
-          </div>
-          <div class="hud-stat-box score-box">
-            <span class="stat-icon">★</span>
-            <div class="stat-val-group">
-              <span class="stat-title">النقاط (SCORE)</span>
-              <span id="hud-score-counter" class="stat-number">0</span>
             </div>
           </div>
         </div>
 
-        <!-- Level 3 Boss Health Bar -->
+        <!-- Boss Health Bar -->
         <div id="boss-hud-bar" class="boss-hud-bar hidden">
           <div class="boss-hud-header">
             <span class="boss-icon">☠</span>
-            <span id="boss-hud-name" class="boss-name">الزعيم الشرير "الباند" (Phase 1)</span>
+            <span id="boss-hud-name" class="boss-name">زعيم المرحلة</span>
           </div>
           <div class="boss-bar-track">
             <div id="boss-hp-fill" class="boss-hp-fill" style="width: 100%"></div>
@@ -95,7 +98,7 @@
         </div>
       </div>
 
-      <!-- Main Menu Screen Modal -->
+      <!-- Main Menu Modal -->
       <section id="main-menu-modal" class="screen-modal main-menu-screen" aria-label="Main Menu">
         <div class="menu-content-card">
           <div class="pixel-art-hero-banner">
@@ -106,39 +109,87 @@
             <div class="mini-hero hero-5"></div>
           </div>
           <h2 class="menu-game-title">ARAB GAMERS</h2>
-          <h3 class="menu-game-subtitle">أساطير البكسل: معركة اليوتيوب</h3>
-          <p class="menu-tagline">اتحد مع أساطير الجيمنج العرب لإنقاذ المنصة من زعيم الباند وحظر القنوات!</p>
+          <h3 class="menu-game-subtitle">أساطير اليوتيوب: حرب الخوارزمية المظلمة</h3>
+          <p class="menu-tagline">20 مرحلة ملحمية، حوارات قصصية مشوقة، وأسلحة فريدة في مواجهة Error 404!</p>
 
           <div class="menu-actions">
-            <button id="btn-start-game" class="btn-retro btn-primary-start" id="btn-start-game">
-              <span class="btn-icon">⚡</span> ابدأ المغامرة | PRESS START
+            <button id="btn-start-game" class="btn-retro btn-primary-start">
+              <span class="btn-icon">⚡</span> خريطة الحملة | CAMPAIGN MAP (20 STAGES)
             </button>
           </div>
 
           <div class="controls-guide-strip">
             <div class="guide-item"><span>A / D / ◄ ►</span> الحركة</div>
-            <div class="guide-item"><span>W / Space / K</span> القفز</div>
-            <div class="guide-item"><span>J / Z</span> الهجوم العادي</div>
+            <div class="guide-item"><span>W / Space / K</span> القفز (Triple Jump)</div>
+            <div class="guide-item"><span>Shift</span> وميض السرعة (Dash)</div>
+            <div class="guide-item"><span>J / Z</span> السلاح الرئيسي</div>
             <div class="guide-item"><span>L / X</span> المهارة الخارقة (ULT)</div>
             <div class="guide-item"><span>1 - 5</span> تبديل اليوتيوبر</div>
           </div>
         </div>
       </section>
 
-      <!-- Character Selection Screen Modal -->
-      <section id="character-select-modal" class="screen-modal char-select-screen hidden" aria-label="Character Select">
-        <div class="char-select-card">
-          <h2 class="screen-title">اختر بطل المغامرة | SELECT HERO</h2>
-          <p class="screen-subtitle">كل يوتيوبر يمتلك إحصائيات ومهارة خارقة (Ultimate) فريدة من نوعها!</p>
+      <!-- 20-Stage Campaign Map Modal -->
+      <section id="campaign-map-modal" class="screen-modal campaign-map-screen hidden" aria-label="Campaign Map">
+        <div class="campaign-map-card">
+          <h2 class="screen-title">🗺️ خريطة المراحل الـ 20 | CAMPAIGN MAP</h2>
+          <p class="screen-subtitle">اختر المرحلة المطلوبة لخوض مغامرة البطل والمهام الخاصة بها</p>
 
-          <div id="hero-cards-grid" class="hero-cards-grid">
+          <div id="campaign-stages-grid" class="campaign-stages-grid">
             <!-- Dynamically populated from JS -->
           </div>
 
-          <div class="char-select-footer">
-            <button id="btn-confirm-hero" class="btn-retro btn-start-fight">
-              <span class="btn-icon">⚔️</span> انطلق إلى المعركة | ENTER BATTLE
+          <div id="map-stage-preview" class="map-stage-preview">
+            <h3>مرحلة 1: شرارة الصدمة</h3>
+            <p class="preview-quest"><strong>المهمة:</strong> اجمع 15 كيس بطاطس ذهبي لشحن الطاقة</p>
+            <p class="preview-hero"><strong>البطل المخصص:</strong> بندريتا (BanderitaX)</p>
+          </div>
+
+          <div class="campaign-map-footer">
+            <button id="btn-launch-stage" class="btn-retro btn-start-fight">
+              <span class="btn-icon">⚔️</span> ابدأ المرحلة | START STAGE
             </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Banderita Weapon Selection Modal -->
+      <section id="weapon-select-modal" class="screen-modal weapon-select-screen hidden" aria-label="Weapon Select">
+        <div class="weapon-select-card">
+          <h2 class="screen-title">🥖 اختر سلاح بندريتا قبل المعركة</h2>
+          <p class="screen-subtitle">حدد أسلوب القتال المفضل لديك لهذه المرحلة:</p>
+
+          <div class="weapons-grid">
+            <div class="weapon-card" id="btn-weapon-tamees">
+              <div class="weapon-icon-box tamees-icon">🥖</div>
+              <h3 class="weapon-name">التميس الأسطوري</h3>
+              <p class="weapon-desc">سلاح مشاجرة ناري ذو مدى قوسي واسع وارتداد قوي جداً يسحق الأعداء عن قرب!</p>
+              <button class="btn-retro btn-choose-weapon">اختيار التميس</button>
+            </div>
+
+            <div class="weapon-card" id="btn-weapon-potato">
+              <div class="weapon-icon-box potato-icon">🥔💥</div>
+              <h3 class="weapon-name">البطاطس الحارقة</h3>
+              <p class="weapon-desc">مقذوفات نارية متفجرة سريعة تصيب الأعداء من مسافات بعيدة مع تأثير انفجار متسلسل!</p>
+              <button class="btn-retro btn-choose-weapon">اختيار البطاطس</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Arabic Typewriter Dialogue Modal -->
+      <section id="dialogue-modal" class="screen-modal dialogue-screen hidden" aria-label="Dialogue Cutscene">
+        <div class="dialogue-card">
+          <div class="dialogue-speaker-box">
+            <div id="dialogue-avatar" class="dialogue-avatar avatar-banderita"></div>
+            <span id="dialogue-speaker-name" class="dialogue-speaker-name">بندريتا</span>
+          </div>
+          <div class="dialogue-content-box">
+            <p id="dialogue-text" class="dialogue-text">...</p>
+          </div>
+          <div class="dialogue-actions">
+            <button id="dialogue-btn-skip" class="btn-retro-mini">تخطي (Skip)</button>
+            <button id="dialogue-btn-next" class="btn-retro btn-dialogue-next">التالي ▶ (Space)</button>
           </div>
         </div>
       </section>
@@ -149,6 +200,7 @@
           <h2 class="pause-title">⏸ اللعبة متوقفة مؤقتاً</h2>
           <div class="pause-actions">
             <button id="btn-resume" class="btn-retro btn-primary">استئناف اللعب (P)</button>
+            <button id="btn-back-to-map" class="btn-retro btn-retro-mini">العودة للخريطة</button>
           </div>
         </div>
       </section>
@@ -156,7 +208,7 @@
       <!-- Game Over Screen Modal -->
       <section id="game-over-modal" class="screen-modal gameover-screen hidden" aria-label="Game Over">
         <div class="gameover-card">
-          <h2 class="gameover-title">💀 تم إعطاؤك سترايك! (GAME OVER)</h2>
+          <h2 class="gameover-title">💀 فشلت المهمة! (GAME OVER)</h2>
           <p class="gameover-desc">لقد تم حظر القناة مؤقتاً! انهض من جديد واستعد مجدك!</p>
           <div class="gameover-stats">
             <div class="stat-pill">المشتركون: <span id="gameover-subs">0</span></div>
@@ -168,47 +220,41 @@
         </div>
       </section>
 
-      <!-- Victory Screen Modal -->
+      <!-- Campaign Victory Screen Modal -->
       <section id="victory-modal" class="screen-modal victory-screen hidden" aria-label="Victory">
         <div class="victory-card">
-          <div class="victory-trophy">🏆</div>
-          <h2 class="victory-title">👑 أسطورة اليوتيوب التاريخية!</h2>
-          <h3 class="victory-subtitle">تم هزيمة زعيم الباند وإنقاذ مجتمع الجيمنج العربي!</h3>
+          <div class="victory-trophy">👑</div>
+          <h2 class="victory-title">🎉 تم إنهاء جميع مراحل الحملة الـ 20 بنجاح!</h2>
+          <h3 class="victory-subtitle">تم كسر كود الخوارزمية المظلمة (Error 404) وتحرير ملايين المشتركين!</h3>
 
           <div class="diamond-plaque-container">
             <div class="diamond-button">
               <div class="play-triangle"></div>
             </div>
-            <span class="plaque-text">درع الـ 10 مليون مشترك الماسي</span>
+            <span class="plaque-text">درع الـ 50 مليون مشترك الماسي الموحد</span>
           </div>
 
           <div class="victory-stats-grid">
-            <div class="v-stat"><span class="v-label">البطل الفائز:</span><span id="victory-hero" class="v-val">بندريتا</span></div>
+            <div class="v-stat"><span class="v-label">التحالف الفائز:</span><span id="victory-hero" class="v-val">أساطير الجيمنج العرب</span></div>
             <div class="v-stat"><span class="v-label">إجمالي المشتركين:</span><span id="victory-subs" class="v-val">0</span></div>
             <div class="v-stat"><span class="v-label">النقاط النهائية:</span><span id="victory-score" class="v-val">0</span></div>
             <div class="v-stat"><span class="v-label">التقييم العام:</span><span id="victory-rank" class="v-val rank-s">S+</span></div>
           </div>
-
-          <div class="victory-actions">
-            <button id="btn-play-again" class="btn-retro btn-success">العب مجدداً ببطل آخر 🎮</button>
-          </div>
         </div>
       </section>
 
-      <!-- Mobile Touch Controls Overlay -->
+      <!-- Mobile Touch Controls -->
       <div id="touch-controls" class="touch-controls-overlay">
-        <!-- D-Pad Left/Right -->
         <div class="touch-dpad-cluster">
           <button id="btn-touch-left" class="touch-btn touch-arrow" aria-label="Move Left">◀</button>
           <button id="btn-touch-right" class="touch-btn touch-arrow" aria-label="Move Right">▶</button>
         </div>
 
-        <!-- Quick Hero Switcher for Mobile -->
         <div class="touch-switch-cluster">
           <button id="btn-touch-switch" class="touch-btn touch-btn-switch" aria-label="Switch Hero">🔄 بطل</button>
+          <button id="btn-touch-dash" class="touch-btn touch-btn-dash" aria-label="Flash Dash">⚡ DASH</button>
         </div>
 
-        <!-- Action Buttons (Jump, Attack, Special) -->
         <div class="touch-actions-cluster">
           <button id="btn-touch-special" class="touch-btn touch-btn-sp" aria-label="Special Ultimate">ULT ⚡</button>
           <button id="btn-touch-attack" class="touch-btn touch-btn-attack" aria-label="Attack">ATK ⚔️</button>
@@ -217,15 +263,18 @@
       </div>
     </div>
 
-    <!-- Arcade Cabinet Footer -->
+    <!-- Arcade Footer -->
     <footer class="arcade-footer">
-      <p>Arab Gamers: Pixel Legends © 2026 | تكريم لأساطير صناع محتوى الجيمنج في العالم العربي</p>
+      <p>Arab Gamers: The 20-Stage Pixel Campaign © 2026 | أساطير اليوتيوب: حرب الخوارزمية المظلمة</p>
     </footer>
   </main>
 
   <!-- Game Scripts -->
+  <script src="src/assets.js"></script>
   <script src="src/audio.js"></script>
   <script src="src/particles.js"></script>
+  <script src="src/dialogue.js"></script>
+  <script src="src/objectives.js"></script>
   <script src="src/player.js"></script>
   <script src="src/enemies.js"></script>
   <script src="src/levels.js"></script>

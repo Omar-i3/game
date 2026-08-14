@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: Pixel Legends - Main Game Engine, Loop & Controller
+// Arab Gamers: The 20-Stage Pixel Campaign - Main Controller & Game Loop
 // ============================================================================
 
 class Game {
@@ -7,175 +7,111 @@ class Game {
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
 
-    // Virtual Internal Resolution (Retro 16:9 Pixel Aspect)
     this.width = 960;
     this.height = 540;
     this.canvas.width = this.width;
     this.canvas.height = this.height;
 
-    // Camera & Screen Shake
     this.cameraX = 0;
     this.cameraY = 0;
     this.shakeIntensity = 0;
     this.shakeDecay = 0.9;
 
-    // Game States: 'menu', 'playing', 'paused', 'gameover', 'victory'
-    this.state = 'menu';
+    this.state = 'menu'; // menu, campaignMap, weaponSelect, dialogue, playing, paused, gameover, victory
     this.score = 0;
     this.subscribers = 1000;
     this.combo = 0;
     this.comboTimer = 0;
 
-    // Projectile tracking for enemies
     this.enemyProjectiles = [];
 
-    // Modules
+    // Instantiate Modules
     this.player = new window.Player('banderita');
     this.levelManager = new window.LevelManager();
+    this.dialogue = new window.DialogueManager();
+    this.objectives = new window.ObjectiveEngine();
     this.ui = new window.UIManager();
 
-    // Inputs
-    this.inputs = {
-      left: false,
-      right: false,
-      up: false,
-      down: false,
-      jump: false,
-      attack: false,
-      special: false
-    };
+    this.inputs = { left: false, right: false, up: false, down: false, jump: false, attack: false, special: false };
 
     this.setupKeyboardListeners();
     this.startLoop();
   }
 
-  // --------------------------------------------------------------------------
-  // Keyboard & Controller Listeners
-  // --------------------------------------------------------------------------
   setupKeyboardListeners() {
     window.addEventListener('keydown', (e) => {
-      window.audio.ensureContext();
-
+      if (window.audio) window.audio.ensureContext();
       if (e.repeat) return;
 
       switch (e.code) {
-        // Movement
-        case 'KeyA':
-        case 'ArrowLeft':
-          this.inputs.left = true;
-          break;
-        case 'KeyD':
-        case 'ArrowRight':
-          this.inputs.right = true;
-          break;
-        case 'KeyW':
-        case 'ArrowUp':
-        case 'KeyK':
-        case 'Space':
+        case 'KeyA': case 'ArrowLeft': this.inputs.left = true; break;
+        case 'KeyD': case 'ArrowRight': this.inputs.right = true; break;
+        case 'KeyW': case 'ArrowUp': case 'KeyK': case 'Space':
           this.inputs.jump = true;
           this.handleJumpPress();
           break;
-        case 'KeyS':
-        case 'ArrowDown':
-          this.inputs.down = true;
-          break;
+        case 'KeyS': case 'ArrowDown': this.inputs.down = true; break;
 
-        // Combat Actions
-        case 'KeyJ':
-        case 'KeyZ':
+        case 'KeyJ': case 'KeyZ':
           this.inputs.attack = true;
           this.handleAttackPress();
           break;
-        case 'KeyL':
-        case 'KeyX':
+        case 'KeyL': case 'KeyX':
           this.inputs.special = true;
           this.handleSpecialPress();
           break;
-
-        // Character Swap (1-5)
-        case 'Digit1':
-          this.switchHero(0);
-          break;
-        case 'Digit2':
-          this.switchHero(1);
-          break;
-        case 'Digit3':
-          this.switchHero(2);
-          break;
-        case 'Digit4':
-          this.switchHero(3);
-          break;
-        case 'Digit5':
-          this.switchHero(4);
+        case 'ShiftLeft': case 'ShiftRight':
+          this.handleDashPress();
           break;
 
-        // Pause
-        case 'KeyP':
-        case 'Escape':
-          this.togglePause();
-          break;
+        case 'Digit1': this.switchHero(0); break;
+        case 'Digit2': this.switchHero(1); break;
+        case 'Digit3': this.switchHero(2); break;
+        case 'Digit4': this.switchHero(3); break;
+        case 'Digit5': this.switchHero(4); break;
+
+        case 'KeyP': case 'Escape': this.togglePause(); break;
       }
     });
 
     window.addEventListener('keyup', (e) => {
       switch (e.code) {
-        case 'KeyA':
-        case 'ArrowLeft':
-          this.inputs.left = false;
-          break;
-        case 'KeyD':
-        case 'ArrowRight':
-          this.inputs.right = false;
-          break;
-        case 'KeyW':
-        case 'ArrowUp':
-        case 'KeyK':
-        case 'Space':
-          this.inputs.jump = false;
-          break;
-        case 'KeyS':
-        case 'ArrowDown':
-          this.inputs.down = false;
-          break;
-        case 'KeyJ':
-        case 'KeyZ':
-          this.inputs.attack = false;
-          break;
-        case 'KeyL':
-        case 'KeyX':
-          this.inputs.special = false;
-          break;
+        case 'KeyA': case 'ArrowLeft': this.inputs.left = false; break;
+        case 'KeyD': case 'ArrowRight': this.inputs.right = false; break;
+        case 'KeyW': case 'ArrowUp': case 'KeyK': case 'Space': this.inputs.jump = false; break;
+        case 'KeyS': case 'ArrowDown': this.inputs.down = false; break;
+        case 'KeyJ': case 'KeyZ': this.inputs.attack = false; break;
+        case 'KeyL': case 'KeyX': this.inputs.special = false; break;
       }
     });
   }
 
   handleJumpPress() {
-    if (this.state === 'playing') {
-      this.player.jump();
-    }
+    if (this.state === 'playing') this.player.jump();
   }
 
   handleAttackPress() {
-    if (this.state === 'playing') {
-      this.player.attack();
-    }
+    if (this.state === 'playing') this.player.attack();
+  }
+
+  handleDashPress() {
+    if (this.state === 'playing') this.player.flashDash();
   }
 
   handleSpecialPress() {
     if (this.state === 'playing') {
       const triggered = this.player.triggerSpecial();
-      if (triggered) {
-        this.addScreenShake(8);
-      }
+      if (triggered) this.addScreenShake(8);
     }
   }
 
   switchHero(index) {
-    if (this.ui) {
-      this.ui.selectHero(index);
-      window.particles.burst(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, 15, ['#ffd700', '#ffffff'], 2, 5);
-      window.particles.addFloatingText(this.player.x + this.player.width / 2, this.player.y - 20, `${this.player.heroData.name}!`, '#ffd700', 14);
-    }
+    const heroKeys = ['banderita', 'mlzlz', 'ocmz', 'abuAbed', 'opiilz'];
+    const key = heroKeys[index] || 'banderita';
+    this.player.setHero(key);
+    window.particles.burst(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, 14, ['#ffd700', '#ffffff'], 2, 5);
+    window.particles.addFloatingText(this.player.x + this.player.width / 2, this.player.y - 20, `${this.player.heroData.name}!`, '#ffd700', 14);
+    if (this.ui) this.ui.updateHUD(this.player);
   }
 
   togglePause() {
@@ -188,56 +124,57 @@ class Game {
     }
   }
 
-  startNewGame(chosenHero = 'banderita') {
-    this.score = 0;
-    this.subscribers = 1000;
-    this.combo = 0;
+  startStage(stageIndex, heroId = 'banderita', weaponChoice = null) {
     this.enemyProjectiles = [];
     window.particles.reset();
 
-    this.player.setHero(chosenHero);
+    this.player.setHero(heroId, weaponChoice);
     this.player.resetPosition(80, 420);
-    this.player.energy = 50; // Start with half energy
+    this.levelManager.loadStage(stageIndex);
 
-    this.levelManager.loadLevel(1);
-    this.state = 'playing';
     this.cameraX = 0;
     this.cameraY = 0;
+
+    // Trigger Intro Dialogue
+    this.dialogue.startDialogue(stageIndex, 'intro', () => {
+      this.state = 'playing';
+      this.ui.showScreen('game');
+    });
   }
 
-  restartLevel() {
-    this.enemyProjectiles = [];
-    window.particles.reset();
-    this.player.hp = this.player.maxHp;
-    this.player.energy = 50;
-    this.player.resetPosition(80, 420);
-    this.levelManager.loadLevel(this.levelManager.currentLevelIndex);
-    this.state = 'playing';
+  restartStage() {
+    const currentIdx = this.levelManager.currentStageIndex || 1;
+    const stage = window.CAMPAIGN_STAGES[currentIdx];
+    this.startStage(currentIdx, stage.heroId);
   }
 
-  loadNextLevel() {
-    window.audio.sfxLevelClear();
-    this.addScore(500);
-    this.addSubscribers(500);
+  completeStage() {
+    const currentIdx = this.levelManager.currentStageIndex;
 
-    const nextIndex = this.levelManager.currentLevelIndex + 1;
-    if (nextIndex <= 3) {
-      window.particles.reset();
-      this.enemyProjectiles = [];
-      this.player.resetPosition(80, 420);
-      this.player.heal(50);
-      this.player.addEnergy(40);
-      this.levelManager.loadLevel(nextIndex);
-      window.particles.addFloatingText(this.player.x + 100, 250, `مرحلة ${nextIndex}!`, '#ffd700', 20, '🚀');
-    } else {
-      // Victory! All levels completed!
-      this.state = 'victory';
-      this.ui.showVictory({
-        subs: this.subscribers,
-        score: this.score,
-        heroName: this.player.heroData.name
-      });
-    }
+    // Trigger Outro Dialogue
+    this.dialogue.startDialogue(currentIdx, 'outro', () => {
+      this.addScore(500);
+      this.addSubscribers(500);
+
+      const nextStage = currentIdx + 1;
+      if (nextStage <= 20) {
+        const nextData = window.CAMPAIGN_STAGES[nextStage];
+        if (nextData.heroId === 'banderita') {
+          this.levelManager.currentStageIndex = nextStage;
+          this.ui.showScreen('weaponSelect');
+        } else {
+          this.startStage(nextStage, nextData.heroId);
+        }
+      } else {
+        // Victory! Finished all 20 stages!
+        this.state = 'victory';
+        this.ui.showVictory({
+          subs: this.subscribers,
+          score: this.score,
+          heroName: 'أساطير اليوتيوب العرب'
+        });
+      }
+    });
   }
 
   addScore(pts) {
@@ -253,9 +190,6 @@ class Game {
     this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
   }
 
-  // --------------------------------------------------------------------------
-  // Main Game Loop (60 FPS)
-  // --------------------------------------------------------------------------
   startLoop() {
     const loop = () => {
       this.update();
@@ -265,31 +199,26 @@ class Game {
     requestAnimationFrame(loop);
   }
 
-  // --------------------------------------------------------------------------
-  // Update Cycle
-  // --------------------------------------------------------------------------
   update() {
     if (this.state !== 'playing') {
       window.particles.update();
       return;
     }
 
-    // Process Movement Inputs
     let moveDir = 0;
     if (this.inputs.left) moveDir -= 1;
     if (this.inputs.right) moveDir += 1;
     this.player.move(moveDir);
 
-    // Update Player & Level
-    this.player.update(this.levelManager.platforms, this.levelManager.enemies, this.levelManager.boss);
+    this.player.update(this.levelManager.platforms, this.levelManager.enemies, this.levelManager.boss, this.levelManager.interactiveObjects);
     this.levelManager.update(this.player);
+    this.objectives.update(this.player);
 
     // Update Enemies
     for (let i = this.levelManager.enemies.length - 1; i >= 0; i--) {
       const enemy = this.levelManager.enemies[i];
       enemy.update(this.player, this.levelManager.platforms, this.enemyProjectiles);
 
-      // Enemy Melee Contact Damage
       if (!enemy.isDead && enemy.frozenTimer <= 0) {
         if (this.player.x < enemy.x + enemy.width && this.player.x + this.player.width > enemy.x &&
             this.player.y < enemy.y + enemy.height && this.player.y + this.player.height > enemy.y) {
@@ -298,7 +227,6 @@ class Game {
         }
       }
 
-      // Cleanup dead enemies after particles
       if (enemy.isDead) {
         this.addScore(enemy.scoreReward);
         this.addSubscribers(enemy.subsReward);
@@ -309,30 +237,23 @@ class Game {
       }
     }
 
-    // Update Boss (Level 3)
+    // Update Boss
     if (this.levelManager.boss) {
       const boss = this.levelManager.boss;
       boss.update(this.player, this.levelManager.platforms, this.enemyProjectiles, this.levelManager.enemies);
 
-      // Boss Contact Damage
       if (!boss.isDead) {
         if (this.player.x < boss.x + boss.width && this.player.x + this.player.width > boss.x &&
             this.player.y < boss.y + boss.height && this.player.y + this.player.height > boss.y) {
           const knockback = Math.sign(this.player.x - boss.x) || 1;
-          this.player.takeDamage(28, knockback);
+          this.player.takeDamage(30, knockback);
         }
-      } else {
-        // Boss Defeated!
-        setTimeout(() => {
-          this.loadNextLevel(); // Trigger victory
-        }, 1500);
       }
     }
 
-    // Process Player Melee / Normal Attack Hitbox
+    // Process Melee Hitbox
     const hitbox = this.player.getAttackHitbox();
     if (hitbox) {
-      // Check Hit against standard enemies
       for (const enemy of this.levelManager.enemies) {
         if (!enemy.isDead &&
             hitbox.x < enemy.x + enemy.width && hitbox.x + hitbox.width > enemy.x &&
@@ -345,16 +266,28 @@ class Game {
         }
       }
 
-      // Check Hit against Boss
       if (this.levelManager.boss && !this.levelManager.boss.isDead) {
         const boss = this.levelManager.boss;
         if (hitbox.x < boss.x + boss.width && hitbox.x + hitbox.width > boss.x &&
             hitbox.y < boss.y + boss.height && hitbox.y + hitbox.height > boss.y) {
           boss.takeDamage(hitbox.damage);
-          this.player.addEnergy(10);
+          this.player.addEnergy(12);
           this.combo++;
           this.comboTimer = 90;
           this.addScreenShake(4);
+        }
+      }
+
+      // Check interactive objects with screwdriver / melee
+      if (this.levelManager.interactiveObjects) {
+        for (const obj of this.levelManager.interactiveObjects) {
+          if (!obj.activated &&
+              hitbox.x < obj.x + 20 && hitbox.x + hitbox.width > obj.x - 20 &&
+              hitbox.y < obj.y + 20 && hitbox.y + hitbox.height > obj.y - 20) {
+            obj.activated = true;
+            this.objectives.recordPuzzleTrigger(obj.id);
+            window.particles.burst(obj.x, obj.y, 14, ['#ffd700', '#2ed573'], 2, 5);
+          }
         }
       }
     }
@@ -365,7 +298,6 @@ class Game {
       proj.x += proj.vx;
       proj.y += proj.vy;
 
-      // Check hit on player
       const pDist = Math.hypot((this.player.x + this.player.width / 2) - proj.x, (this.player.y + this.player.height / 2) - proj.y);
       if (pDist < (proj.radius + this.player.width / 2)) {
         this.player.takeDamage(proj.damage, Math.sign(proj.vx));
@@ -374,93 +306,66 @@ class Game {
         continue;
       }
 
-      // Check screen bounds or expiration
-      if (proj.x < -100 || proj.x > this.levelManager.level.width + 100 || proj.y > 650) {
+      if (proj.x < -100 || proj.x > this.levelManager.stage.width + 100 || proj.y > 650) {
         this.enemyProjectiles.splice(i, 1);
       }
     }
 
-    // Update Combo Timer
     if (this.comboTimer > 0) {
       this.comboTimer--;
-      if (this.comboTimer <= 0) {
-        this.combo = 0;
-      }
+      if (this.comboTimer <= 0) this.combo = 0;
     }
 
-    // Check Warp Portal to Next Level
-    if (this.levelManager.portal) {
+    // Check Exit Portal
+    if (this.levelManager.portal && this.objectives.isCompleted) {
       const port = this.levelManager.portal;
       if (this.player.x + this.player.width > port.x && this.player.x < port.x + port.w &&
           this.player.y + this.player.height > port.y && this.player.y < port.y + port.h) {
-        this.loadNextLevel();
+        this.completeStage();
       }
     }
 
-    // Fall in pit death check
     if (this.player.y > 620) {
       this.player.takeDamage(999);
     }
 
-    // Check Player Death / Game Over
     if (this.player.hp <= 0) {
       this.state = 'gameover';
-      this.ui.showGameOver({
-        subs: this.subscribers,
-        score: this.score
-      });
+      this.ui.showGameOver({ subs: this.subscribers, score: this.score });
     }
 
-    // Smooth Camera Following Player
+    // Camera
     const targetCamX = this.player.x - this.width / 2 + this.player.width / 2;
-    const maxCamX = Math.max(0, this.levelManager.level.width - this.width);
+    const maxCamX = Math.max(0, this.levelManager.stage.width - this.width);
     this.cameraX += (Math.max(0, Math.min(maxCamX, targetCamX)) - this.cameraX) * 0.1;
 
-    // Decay Screen Shake
     if (this.shakeIntensity > 0) {
       this.shakeIntensity *= this.shakeDecay;
       if (this.shakeIntensity < 0.1) this.shakeIntensity = 0;
     }
 
-    // Update Particle System
     window.particles.update();
-
-    // Update HUD
     this.ui.updateHUD(this.player);
   }
 
-  // --------------------------------------------------------------------------
-  // Render Cycle
-  // --------------------------------------------------------------------------
   render() {
     this.ctx.clearRect(0, 0, this.width, this.height);
-
     this.ctx.save();
 
-    // Apply Screen Shake
     if (this.shakeIntensity > 0) {
       const shakeX = (Math.random() - 0.5) * this.shakeIntensity * 2;
       const shakeY = (Math.random() - 0.5) * this.shakeIntensity * 2;
       this.ctx.translate(shakeX, shakeY);
     }
 
-    // 1. Draw Parallax Background
-    if (this.levelManager && this.levelManager.level) {
+    if (this.levelManager && this.levelManager.stage) {
       this.levelManager.drawBackground(this.ctx, this.cameraX, this.cameraY, this.width, this.height);
       this.levelManager.drawLevel(this.ctx, this.cameraX, this.cameraY);
     }
 
-    // 2. Draw Enemies
-    for (const enemy of this.levelManager.enemies) {
-      enemy.draw(this.ctx, this.cameraX, this.cameraY);
-    }
+    for (const enemy of this.levelManager.enemies) enemy.draw(this.ctx, this.cameraX, this.cameraY);
+    if (this.levelManager.boss) this.levelManager.boss.draw(this.ctx, this.cameraX, this.cameraY);
 
-    // 3. Draw Boss (Level 3)
-    if (this.levelManager.boss) {
-      this.levelManager.boss.draw(this.ctx, this.cameraX, this.cameraY);
-    }
-
-    // 4. Draw Enemy Projectiles
     for (const proj of this.enemyProjectiles) {
       const prx = Math.round(proj.x - this.cameraX);
       const pry = Math.round(proj.y - this.cameraY);
@@ -469,21 +374,12 @@ class Game {
       this.ctx.beginPath();
       this.ctx.arc(prx, pry, proj.radius, 0, Math.PI * 2);
       this.ctx.fill();
-      this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
       this.ctx.restore();
     }
 
-    // 5. Draw Player Character
-    if (this.player) {
-      this.player.draw(this.ctx, this.cameraX, this.cameraY);
-    }
-
-    // 6. Draw Particle System & Shockwaves
+    if (this.player) this.player.draw(this.ctx, this.cameraX, this.cameraY);
     window.particles.draw(this.ctx, this.cameraX, this.cameraY);
 
-    // 7. Draw Combo Counter if active
     if (this.combo > 1) {
       this.ctx.save();
       this.ctx.font = 'bold 18px "Press Start 2P", sans-serif';
@@ -501,7 +397,6 @@ class Game {
   }
 }
 
-// Global bootstrap
 window.addEventListener('DOMContentLoaded', () => {
   window.game = new Game();
 });
