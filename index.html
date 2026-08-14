@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Arab Gamers: Pixel Legends | أساطير البكسل</title>
+  <meta name="description" content="لعبة أكشن ومنصات ريترو بكسل آرت تضم أشهر يوتيوبرز الجيمنج العرب: بندريتا، ملزلز، أوسمز، أبو عابد، وأوبلز!">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <!-- Google Fonts: Retro Arcade + Modern Arabic Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Retro CRT Scanline & Glow Layer -->
+  <div class="crt-overlay"></div>
+
+  <main class="arcade-wrapper" id="arcade-wrapper">
+    <!-- Arcade Cabinet Header -->
+    <header class="arcade-header">
+      <div class="logo-group">
+        <span class="arcade-badge">ARAB GAMING LEGENDS</span>
+        <h1 class="main-title">أساطير البكسل <span class="en-sub">PIXEL LEGENDS</span></h1>
+      </div>
+      <div class="header-controls">
+        <button id="btn-toggle-sound" class="btn-retro-mini" aria-label="Toggle Sound">🔊 الصوت: يعمل</button>
+      </div>
+    </header>
+
+    <!-- Game Screen Container -->
+    <div class="game-viewport-container" id="game-viewport-container">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- In-Game Arcade Top HUD Overlay -->
+      <div id="hud" class="hud-overlay hidden">
+        <div class="hud-left">
+          <!-- Active Hero Profile & Health -->
+          <div class="hero-hud-card">
+            <div id="hud-avatar" class="hud-avatar avatar-banderita"></div>
+            <div class="hud-hero-details">
+              <div id="hud-hero-name" class="hud-hero-name">بندريتا (BanderitaX)</div>
+              <div class="hud-bar-container">
+                <div class="hud-bar-label">HP</div>
+                <div class="hud-bar-track hp-track">
+                  <div id="hud-hp-fill" class="hud-bar-fill hp-fill" style="width: 100%"></div>
+                </div>
+                <span id="hud-hp-text" class="hud-bar-val">150 / 150</span>
+              </div>
+              <div class="hud-bar-container">
+                <div class="hud-bar-label">ULT</div>
+                <div class="hud-bar-track energy-track">
+                  <div id="hud-energy-fill" class="hud-bar-fill energy-fill" style="width: 50%"></div>
+                </div>
+                <span id="hud-energy-text" class="hud-bar-val">50%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-center">
+          <div id="hud-level-title" class="hud-level-title">مرحلة 1: يوتيوب سيتي</div>
+          <div id="hud-ult-status" class="hud-ult-status">غضبة البطاطا</div>
+        </div>
+
+        <div class="hud-right">
+          <!-- Live Subscribers & High Score Counter -->
+          <div class="hud-stat-box">
+            <span class="stat-icon">▶</span>
+            <div class="stat-val-group">
+              <span class="stat-title">المشتركون (SUBS)</span>
+              <span id="hud-subs-counter" class="stat-number">1,000</span>
+            </div>
+          </div>
+          <div class="hud-stat-box score-box">
+            <span class="stat-icon">★</span>
+            <div class="stat-val-group">
+              <span class="stat-title">النقاط (SCORE)</span>
+              <span id="hud-score-counter" class="stat-number">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Level 3 Boss Health Bar -->
+        <div id="boss-hud-bar" class="boss-hud-bar hidden">
+          <div class="boss-hud-header">
+            <span class="boss-icon">☠</span>
+            <span id="boss-hud-name" class="boss-name">الزعيم الشرير "الباند" (Phase 1)</span>
+          </div>
+          <div class="boss-bar-track">
+            <div id="boss-hp-fill" class="boss-hp-fill" style="width: 100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Menu Screen Modal -->
+      <section id="main-menu-modal" class="screen-modal main-menu-screen" aria-label="Main Menu">
+        <div class="menu-content-card">
+          <div class="pixel-art-hero-banner">
+            <div class="mini-hero hero-1"></div>
+            <div class="mini-hero hero-2"></div>
+            <div class="mini-hero hero-3"></div>
+            <div class="mini-hero hero-4"></div>
+            <div class="mini-hero hero-5"></div>
+          </div>
+          <h2 class="menu-game-title">ARAB GAMERS</h2>
+          <h3 class="menu-game-subtitle">أساطير البكسل: معركة اليوتيوب</h3>
+          <p class="menu-tagline">اتحد مع أساطير الجيمنج العرب لإنقاذ المنصة من زعيم الباند وحظر القنوات!</p>
+
+          <div class="menu-actions">
+            <button id="btn-start-game" class="btn-retro btn-primary-start" id="btn-start-game">
+              <span class="btn-icon">⚡</span> ابدأ المغامرة | PRESS START
+            </button>
+          </div>
+
+          <div class="controls-guide-strip">
+            <div class="guide-item"><span>A / D / ◄ ►</span> الحركة</div>
+            <div class="guide-item"><span>W / Space / K</span> القفز</div>
+            <div class="guide-item"><span>J / Z</span> الهجوم العادي</div>
+            <div class="guide-item"><span>L / X</span> المهارة الخارقة (ULT)</div>
+            <div class="guide-item"><span>1 - 5</span> تبديل اليوتيوبر</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Character Selection Screen Modal -->
+      <section id="character-select-modal" class="screen-modal char-select-screen hidden" aria-label="Character Select">
+        <div class="char-select-card">
+          <h2 class="screen-title">اختر بطل المغامرة | SELECT HERO</h2>
+          <p class="screen-subtitle">كل يوتيوبر يمتلك إحصائيات ومهارة خارقة (Ultimate) فريدة من نوعها!</p>
+
+          <div id="hero-cards-grid" class="hero-cards-grid">
+            <!-- Dynamically populated from JS -->
+          </div>
+
+          <div class="char-select-footer">
+            <button id="btn-confirm-hero" class="btn-retro btn-start-fight">
+              <span class="btn-icon">⚔️</span> انطلق إلى المعركة | ENTER BATTLE
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pause Screen Modal -->
+      <section id="pause-modal" class="screen-modal pause-screen hidden" aria-label="Game Paused">
+        <div class="pause-card">
+          <h2 class="pause-title">⏸ اللعبة متوقفة مؤقتاً</h2>
+          <div class="pause-actions">
+            <button id="btn-resume" class="btn-retro btn-primary">استئناف اللعب (P)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Game Over Screen Modal -->
+      <section id="game-over-modal" class="screen-modal gameover-screen hidden" aria-label="Game Over">
+        <div class="gameover-card">
+          <h2 class="gameover-title">💀 تم إعطاؤك سترايك! (GAME OVER)</h2>
+          <p class="gameover-desc">لقد تم حظر القناة مؤقتاً! انهض من جديد واستعد مجدك!</p>
+          <div class="gameover-stats">
+            <div class="stat-pill">المشتركون: <span id="gameover-subs">0</span></div>
+            <div class="stat-pill">النقاط: <span id="gameover-score">0</span></div>
+          </div>
+          <div class="gameover-actions">
+            <button id="btn-retry" class="btn-retro btn-danger">إعادة المحاولة 🔄</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Victory Screen Modal -->
+      <section id="victory-modal" class="screen-modal victory-screen hidden" aria-label="Victory">
+        <div class="victory-card">
+          <div class="victory-trophy">🏆</div>
+          <h2 class="victory-title">👑 أسطورة اليوتيوب التاريخية!</h2>
+          <h3 class="victory-subtitle">تم هزيمة زعيم الباند وإنقاذ مجتمع الجيمنج العربي!</h3>
+
+          <div class="diamond-plaque-container">
+            <div class="diamond-button">
+              <div class="play-triangle"></div>
+            </div>
+            <span class="plaque-text">درع الـ 10 مليون مشترك الماسي</span>
+          </div>
+
+          <div class="victory-stats-grid">
+            <div class="v-stat"><span class="v-label">البطل الفائز:</span><span id="victory-hero" class="v-val">بندريتا</span></div>
+            <div class="v-stat"><span class="v-label">إجمالي المشتركين:</span><span id="victory-subs" class="v-val">0</span></div>
+            <div class="v-stat"><span class="v-label">النقاط النهائية:</span><span id="victory-score" class="v-val">0</span></div>
+            <div class="v-stat"><span class="v-label">التقييم العام:</span><span id="victory-rank" class="v-val rank-s">S+</span></div>
+          </div>
+
+          <div class="victory-actions">
+            <button id="btn-play-again" class="btn-retro btn-success">العب مجدداً ببطل آخر 🎮</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mobile Touch Controls Overlay -->
+      <div id="touch-controls" class="touch-controls-overlay">
+        <!-- D-Pad Left/Right -->
+        <div class="touch-dpad-cluster">
+          <button id="btn-touch-left" class="touch-btn touch-arrow" aria-label="Move Left">◀</button>
+          <button id="btn-touch-right" class="touch-btn touch-arrow" aria-label="Move Right">▶</button>
+        </div>
+
+        <!-- Quick Hero Switcher for Mobile -->
+        <div class="touch-switch-cluster">
+          <button id="btn-touch-switch" class="touch-btn touch-btn-switch" aria-label="Switch Hero">🔄 بطل</button>
+        </div>
+
+        <!-- Action Buttons (Jump, Attack, Special) -->
+        <div class="touch-actions-cluster">
+          <button id="btn-touch-special" class="touch-btn touch-btn-sp" aria-label="Special Ultimate">ULT ⚡</button>
+          <button id="btn-touch-attack" class="touch-btn touch-btn-attack" aria-label="Attack">ATK ⚔️</button>
+          <button id="btn-touch-jump" class="touch-btn touch-btn-jump" aria-label="Jump">JUMP ⬆</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arcade Cabinet Footer -->
+    <footer class="arcade-footer">
+      <p>Arab Gamers: Pixel Legends © 2026 | تكريم لأساطير صناع محتوى الجيمنج في العالم العربي</p>
+    </footer>
+  </main>
+
+  <!-- Game Scripts -->
+  <script src="src/audio.js"></script>
+  <script src="src/particles.js"></script>
+  <script src="src/player.js"></script>
+  <script src="src/enemies.js"></script>
+  <script src="src/levels.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
