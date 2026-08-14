@@ -397,6 +397,16 @@ class Game {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.game = new Game();
-});
+window.Game = Game;
+
+function initGame() {
+  if (!window.game) {
+    window.game = new Game();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGame);
+} else {
+  initGame();
+}

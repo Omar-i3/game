@@ -47,7 +47,16 @@ class UIManager {
       `;
 
       card.addEventListener('click', () => {
+        if (this.selectedStageIndex === i) {
+          // If already selected, launch it directly!
+          this.launchSelectedStage();
+        } else {
+          this.selectStage(i);
+        }
+      });
+      card.addEventListener('dblclick', () => {
         this.selectStage(i);
+        this.launchSelectedStage();
       });
 
       grid.appendChild(card);
@@ -77,6 +86,18 @@ class UIManager {
     }
   }
 
+  launchSelectedStage() {
+    try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+    const stage = window.CAMPAIGN_STAGES ? window.CAMPAIGN_STAGES[this.selectedStageIndex] : null;
+
+    // If stage is Banderita, open Weapon Selection modal first
+    if (stage && stage.heroId === 'banderita') {
+      this.showScreen('weaponSelect');
+    } else if (window.game) {
+      window.game.startStage(this.selectedStageIndex, stage ? stage.heroId : 'banderita');
+    }
+  }
+
   setupEventListeners() {
     // Menu buttons
     const btnStart = document.getElementById('btn-start-game');
@@ -99,15 +120,7 @@ class UIManager {
     if (btnLaunchStage) {
       btnLaunchStage.addEventListener('click', (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
-        const stage = window.CAMPAIGN_STAGES[this.selectedStageIndex];
-
-        // If stage is Banderita, open Weapon Selection modal first
-        if (stage && stage.heroId === 'banderita') {
-          this.showScreen('weaponSelect');
-        } else if (window.game) {
-          window.game.startStage(this.selectedStageIndex, stage ? stage.heroId : 'banderita');
-        }
+        this.launchSelectedStage();
       });
     }
 
@@ -196,6 +209,16 @@ class UIManager {
   }
 
   showScreen(screenName) {
+    if (window.game) {
+      if (screenName === 'game') window.game.state = 'playing';
+      else if (screenName === 'pause') window.game.state = 'paused';
+      else if (screenName === 'gameOver') window.game.state = 'gameover';
+      else if (screenName === 'victory') window.game.state = 'victory';
+      else if (screenName === 'campaignMap') window.game.state = 'campaignMap';
+      else if (screenName === 'weaponSelect') window.game.state = 'weaponSelect';
+      else if (screenName === 'menu') window.game.state = 'menu';
+    }
+
     if (this.mainMenuModal) this.mainMenuModal.classList.toggle('hidden', screenName !== 'menu');
     if (this.campaignMapModal) this.campaignMapModal.classList.toggle('hidden', screenName !== 'campaignMap');
     if (this.weaponSelectModal) this.weaponSelectModal.classList.toggle('hidden', screenName !== 'weaponSelect');
