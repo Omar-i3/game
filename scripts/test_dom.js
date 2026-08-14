@@ -1,4 +1,4 @@
-// Comprehensive test suite for Arab Gamers Enhanced Edition
+// Comprehensive test suite for Arab Gamers Mega Edition
 const fs = require('fs');
 
 const clickListeners = {};
@@ -90,6 +90,9 @@ const scripts = [
   'src/particles.js',
   'src/dialogue.js',
   'src/shop.js',
+  'src/studio.js',
+  'src/assists.js',
+  'src/events.js',
   'src/achievements.js',
   'src/objectives.js',
   'src/player.js',
@@ -104,7 +107,7 @@ for (const s of scripts) {
   eval(code);
 }
 
-console.log('✓ All modules loaded successfully including shop & achievements!');
+console.log('✓ All modules loaded successfully including assists, events, and studio builder!');
 
 // Test Progression
 console.log('Testing Progression Manager...');
@@ -120,6 +123,12 @@ const buyRes = window.shop.buyItem('cheese_tamees', 100000);
 console.log('Buy cheese_tamees result:', buyRes);
 console.log('Has cheese_tamees upgrade:', window.shop.hasUpgrade('cheese_tamees'));
 
+// Test Studio Builder Perks
+console.log('Testing Studio Builder...');
+const perkRes = window.studio.buyPerk('gaming_chair', 100000);
+console.log('Buy gaming_chair perk result:', perkRes);
+console.log('Has gaming_chair perk:', window.studio.hasPerk('gaming_chair'));
+
 // Test Achievements
 console.log('Testing Achievements...');
 window.achievements.unlock('speedrun_banderita');
@@ -129,6 +138,16 @@ console.log('Is speedrun_banderita unlocked:', window.achievements.isUnlocked('s
 console.log('Testing Game Loop & UI Manager...');
 const game = new window.Game();
 console.log('Game created with state:', game.state);
+
+// Test Hero Assist Trigger
+console.log('Testing Hero Assist System...');
+const assistSuccess = window.assists.triggerAssist(game.player, game.levelManager.enemies, game.enemyProjectiles, game.levelManager.boss);
+console.log('Assist triggered successfully:', assistSuccess);
+
+// Test Live Stream Events
+console.log('Testing Live Stream Events...');
+window.events.triggerRandomEvent(game.player, game.levelManager.enemies, 0, 960);
+console.log('Active Live Stream Event:', window.events.activeEvent);
 
 // Test all 20 stages loading and enemy coordinates verification
 console.log('Verifying all 20 stages loading & enemy coordinates...');

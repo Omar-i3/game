@@ -21,7 +21,7 @@ class Game {
     this.bossRushIndex = 1;
     this.endlessWave = 1;
 
-    this.state = 'menu'; // menu, campaignMap, lore, shop, achievements, modes, weaponSelect, dialogue, playing, stageClear, paused, gameover, victory
+    this.state = 'menu'; // menu, campaignMap, lore, shop, studio, achievements, modes, weaponSelect, dialogue, playing, stageClear, paused, gameover, victory
     this.score = 0;
     this.totalSubscribers = 1000;
     this.levelSubscribers = 0;
@@ -96,6 +96,10 @@ class Game {
           this.handleSpecialPress();
           break;
 
+        case 'KeyF':
+          this.handleAssistPress();
+          break;
+
         case 'KeyE': case 'Enter':
           if (this.state === 'dialogue') this.dialogue.advance();
           break;
@@ -141,6 +145,13 @@ class Game {
     }
   }
 
+  handleAssistPress() {
+    if (this.state === 'playing' && window.assists) {
+      const success = window.assists.triggerAssist(this.player, this.levelManager.enemies, this.enemyProjectiles, this.levelManager.boss);
+      if (success) this.addScreenShake(6);
+    }
+  }
+
   switchHero(index) {
     const heroKeys = ['banderita', 'mlzlz', 'ocmz', 'abuAbed', 'opiilz'];
     const key = heroKeys[index] || 'banderita';
@@ -168,6 +179,7 @@ class Game {
     this.combo = 0;
     this.comboTimer = 0;
     window.particles.reset();
+    if (window.events) window.events.reset();
 
     this.player.setHero(heroId, weaponChoice);
     this.player.resetPosition(80, 420);
@@ -192,6 +204,7 @@ class Game {
     this.combo = 0;
     this.comboTimer = 0;
     window.particles.reset();
+    if (window.events) window.events.reset();
 
     this.player.setHero('banderita');
     this.player.resetPosition(80, 420);
@@ -296,8 +309,13 @@ class Game {
   }
 
   addSubscribers(count) {
-    this.levelSubscribers += count;
-    this.addScore(Math.floor(count / 100));
+    let rate = 1.0;
+    if (window.studio && window.studio.hasPerk('gold_play_button')) rate *= 1.3;
+    if (window.events && window.events.subsMultiplier > 1) rate *= window.events.subsMultiplier;
+
+    const finalSubs = Math.round(count * rate);
+    this.levelSubscribers += finalSubs;
+    this.addScore(Math.floor(finalSubs / 100));
   }
 
   addScreenShake(intensity) {
@@ -319,6 +337,10 @@ class Game {
       return;
     }
 
+    // Check Live Stream Events Freeze State
+    const isStreamLagged = window.events ? window.events.update(this.player, this.levelManager.enemies, this.cameraX, this.width) : false;
+    if (isStreamLagged) return;
+
     this.stageTimer++;
 
     let moveDir = 0;
@@ -330,6 +352,10 @@ class Game {
     this.levelManager.update(this.player);
     this.objectives.update(this.player);
 
+    if (window.assists) {
+      window.assists.update(this.player, this.levelManager.enemies, this.levelManager.boss);
+    }
+
     // Update Enemies
     for (let i = this.levelManager.enemies.length - 1; i >= 0; i--) {
       const enemy = this.levelManager.enemies[i];
@@ -338,6 +364,18 @@ class Game {
       if (!enemy.isDead && enemy.frozenTimer <= 0) {
         if (this.player.x < enemy.x + enemy.width && this.player.x + this.player.width > enemy.x &&
             this.player.y < enemy.y + enemy.height && this.player.y + this.player.height > enemy.y) {
+
+          // Fake Sub Trap triggers explosion & deducts subscribers
+          if (enemy.isFakeSub) {
+            this.levelSubscribers = Math.max(0, this.levelSubscribers - 1500);
+            this.player.takeDamage(15);
+            window.particles.burst(enemy.x, enemy.y, 25, ['#ffd700', '#ff4757', '#000000'], 3, 7);
+            window.particles.addFloatingText(this.player.x, this.player.y - 25, '⚠️ فخ مشترك وهمي! (-1,500 مشترك)', '#ff4757', 14);
+            if (window.audio) window.audio.sfxExplosion();
+            this.levelManager.enemies.splice(i, 1);
+            continue;
+          }
+
           const knockback = Math.sign(this.player.x - enemy.x) || 1;
           this.player.takeDamage(enemy.damage, knockback);
 
@@ -356,6 +394,8 @@ class Game {
         this.player.addEnergy(15);
         this.combo++;
         this.comboTimer = 90;
+
+        if (window.events) window.events.recordEnemyKill();
         this.levelManager.enemies.splice(i, 1);
       }
     }
@@ -430,6 +470,10 @@ class Game {
       const pDist = Math.hypot((this.player.x + this.player.width / 2) - proj.x, (this.player.y + this.player.height / 2) - proj.y);
       if (pDist < (proj.radius + this.player.width / 2)) {
         this.player.takeDamage(proj.damage, Math.sign(proj.vx));
+        if (proj.isToxicComment) {
+          this.player.lagTimer = 90; // Toxic comment slows player
+          window.particles.addFloatingText(this.player.x, this.player.y - 20, '🤢 تعليق سلبي سام!', '#2ed573', 12);
+        }
         window.particles.burst(proj.x, proj.y, 8, [proj.color, '#ffffff'], 2, 4);
         this.enemyProjectiles.splice(i, 1);
         continue;
@@ -532,7 +576,9 @@ class Game {
       this.ctx.restore();
     }
 
+    if (window.events) window.events.draw(this.ctx, this.cameraX, this.cameraY);
     if (this.player) this.player.draw(this.ctx, this.cameraX, this.cameraY);
+    if (window.assists) window.assists.draw(this.ctx, this.cameraX, this.cameraY, this.player);
     window.particles.draw(this.ctx, this.cameraX, this.cameraY);
 
     if (this.combo > 1) {

@@ -21,6 +21,9 @@
   <!-- Achievements Toast Notification Container -->
   <div id="achievement-toast-container" class="achievement-toast-container"></div>
 
+  <!-- Live Stream Event Banner -->
+  <div id="stream-event-banner" class="stream-event-banner hidden"></div>
+
   <main class="arcade-wrapper" id="arcade-wrapper">
     <!-- Arcade Header -->
     <header class="arcade-header">
@@ -58,6 +61,13 @@
                   <div id="hud-energy-fill" class="hud-bar-fill energy-fill" style="width: 50%"></div>
                 </div>
                 <span id="hud-energy-text" class="hud-bar-val">50%</span>
+              </div>
+              <div class="hud-bar-container">
+                <div class="hud-bar-label">فزعة</div>
+                <div class="hud-bar-track assist-track">
+                  <div id="hud-assist-fill" class="hud-bar-fill assist-fill" style="width: 100%"></div>
+                </div>
+                <span id="hud-assist-text" class="hud-bar-val">جاهز!</span>
               </div>
             </div>
           </div>
@@ -106,6 +116,7 @@
           <span class="key-hint"><kbd>W</kbd>/<kbd>Space</kbd> قفز</span>
           <span class="key-hint"><kbd>J</kbd> هجوم</span>
           <span class="key-hint"><kbd>K</kbd> Dash</span>
+          <span class="key-hint"><kbd>F</kbd> فزعة ⚡</span>
           <span class="key-hint"><kbd>U</kbd> ULT</span>
           <span class="key-hint"><kbd>1-5</kbd> بطل</span>
         </div>
@@ -123,7 +134,7 @@
           </div>
           <h2 class="menu-game-title">ARAB GAMERS</h2>
           <h3 class="menu-game-subtitle">أساطير اليوتيوب: حرب الخوارزمية المظلمة</h3>
-          <p class="menu-tagline">20 مرحلة ملحمية، متجر ترقيات صانعي المحتوى، إنجازات ريترو، وحوارات مشوقة!</p>
+          <p class="menu-tagline">20 مرحلة ملحمية، نظام الفزعة المتبادلة، تأثيث غرفة البث، ومتجر الترقيات!</p>
 
           <div class="menu-actions-grid">
             <button id="btn-start-story" class="btn-retro btn-primary-start">
@@ -135,6 +146,9 @@
             <button id="btn-open-shop" class="btn-retro btn-shop-open">
               <span class="btn-icon">🛍️</span> متجر الدروع والترقيات (SHOP)
             </button>
+            <button id="btn-open-studio" class="btn-retro btn-studio-open">
+              <span class="btn-icon">🛋️</span> تأثيث غرفة البث (STUDIO)
+            </button>
             <button id="btn-open-modes" class="btn-retro btn-modes-open">
               <span class="btn-icon">⚔️</span> أطوار اللعبة الإضافية (MODES)
             </button>
@@ -144,8 +158,8 @@
             <button id="btn-open-lore" class="btn-retro btn-lore-open">
               <span class="btn-icon">📖</span> القصة والتحكم (HOW TO PLAY)
             </button>
-            <button id="btn-reset-progress" class="btn-retro btn-reset-prog" style="grid-column: span 2;">
-              <span class="btn-icon">🔄</span> إعادة ضبط التقدم (RESET PROGRESS)
+            <button id="btn-reset-progress" class="btn-retro btn-reset-prog">
+              <span class="btn-icon">🔄</span> إعادة ضبط التقدم
             </button>
           </div>
         </div>
@@ -166,6 +180,25 @@
 
           <div class="shop-footer">
             <button id="btn-close-shop" class="btn-retro btn-primary">العودة للقائمة الرئيسية</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Studio Builder (غرفة البث) Modal -->
+      <section id="studio-modal" class="screen-modal studio-screen hidden" aria-label="Studio Builder">
+        <div class="studio-card">
+          <div class="studio-header-row">
+            <h2 class="screen-title">🛋️ تأثيث غرفة البث والجيمنج (STUDIO)</h2>
+            <div class="studio-subs-badge">رصيد المشتركين: <span id="studio-subs-count">0</span> 👥</div>
+          </div>
+          <p class="screen-subtitle">أثث سيت أب أحلامك واحصل على تعزيزات إحصائيات دائمة لجميع الأبطال!</p>
+
+          <div id="studio-perks-grid" class="studio-perks-grid">
+            <!-- Dynamically populated from JS -->
+          </div>
+
+          <div class="studio-footer">
+            <button id="btn-close-studio" class="btn-retro btn-primary">العودة للقائمة الرئيسية</button>
           </div>
         </div>
       </section>
@@ -236,7 +269,7 @@
 
             <div class="lore-section">
               <h3>🎮 أزرار التحكم:</h3>
-              <p><strong>الكمبيوتر:</strong> A / D للحركة • W أو المسافة للقفز • J للهجوم بالسلاح • K للـ Dash • U للمهارة الخارقة (ULT) • 1-5 لتبديل البطل.</p>
+              <p><strong>الكمبيوتر:</strong> A / D للحركة • W أو المسافة للقفز • J للهجوم بالسلاح • K للـ Dash • F للفزعة ⚡ • U للمهارة الخارقة (ULT) • 1-5 لتبديل البطل.</p>
               <p><strong>الهواتف:</strong> أزرار التحكم باللمس المدمجة أسفل الشاشة.</p>
             </div>
           </div>
@@ -408,6 +441,7 @@
         <div class="touch-switch-cluster">
           <button id="btn-touch-switch" class="touch-btn touch-btn-switch" aria-label="Switch Hero">🔄 بطل</button>
           <button id="btn-touch-dash" class="touch-btn touch-btn-dash" aria-label="Flash Dash">⚡ DASH</button>
+          <button id="btn-touch-assist" class="touch-btn touch-btn-assist" aria-label="Hero Assist">🤝 فزعة</button>
         </div>
 
         <div class="touch-actions-cluster">
@@ -430,6 +464,9 @@
   <script src="src/particles.js"></script>
   <script src="src/dialogue.js"></script>
   <script src="src/shop.js"></script>
+  <script src="src/studio.js"></script>
+  <script src="src/assists.js"></script>
+  <script src="src/events.js"></script>
   <script src="src/achievements.js"></script>
   <script src="src/objectives.js"></script>
   <script src="src/player.js"></script>

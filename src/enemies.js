@@ -108,6 +108,31 @@ class Enemy {
         this.subsReward = 2000; this.scoreReward = 300; this.color = '#ff0055';
         break;
 
+      case 'spamBot':
+        this.name = 'الذباب الإلكتروني 🪰';
+        this.width = 24; this.height = 24;
+        this.hp = 25; this.maxHp = 25; this.damage = 12; this.speed = 3.2;
+        this.cloneTimer = 300; // Clones after 5 seconds
+        this.isSpamBot = true;
+        this.subsReward = 800; this.scoreReward = 150; this.color = '#a4b0be';
+        break;
+
+      case 'theHaters':
+        this.name = 'الهيترز المحصن 🛡️';
+        this.width = 44; this.height = 50;
+        this.hp = 90; this.maxHp = 90; this.damage = 22; this.speed = 1.4;
+        this.isHater = true;
+        this.subsReward = 4000; this.scoreReward = 550; this.color = '#2ed573';
+        break;
+
+      case 'fakeSubTrap':
+        this.name = 'فخ المشترك الوهمي ⚠️';
+        this.width = 32; this.height = 32;
+        this.hp = 1; this.maxHp = 1; this.damage = 0; this.speed = 0;
+        this.isFakeSub = true;
+        this.subsReward = 0; this.scoreReward = 0; this.color = '#ffd700';
+        break;
+
       default:
         this.name = 'فيروس جليتش';
         this.width = 32; this.height = 36;
@@ -201,6 +226,24 @@ class Enemy {
       if (Math.abs(this.x - this.startX) > this.patrolDist) {
         this.vx = -this.vx;
         this.facing = Math.sign(this.vx);
+      }
+
+      // The Haters: Shoot Toxic Comment Bubble
+      if (this.type === 'theHaters' && player && projectiles) {
+        this.shootCooldown--;
+        if (this.shootCooldown <= 0 && Math.abs(player.x - this.x) < 400) {
+          this.shootCooldown = 110;
+          projectiles.push({
+            x: this.x + (this.facing > 0 ? this.width : 0),
+            y: this.y + 16,
+            vx: this.facing * 5,
+            vy: -1,
+            radius: 7,
+            damage: 20,
+            color: '#2ed573',
+            isToxicComment: true
+          });
+        }
       }
     }
   }
@@ -310,12 +353,62 @@ class Enemy {
         this.drawAdBarrier(ctx);
         break;
 
+      case 'spamBot':
+        this.drawSpamBot(ctx, bob);
+        break;
+
+      case 'theHaters':
+        this.drawTheHaters(ctx, bob);
+        break;
+
+      case 'fakeSubTrap':
+        this.drawFakeSubTrap(ctx, bob);
+        break;
+
       default:
         ctx.fillStyle = this.color;
         ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
         break;
     }
 
+    ctx.restore();
+  }
+
+  drawSpamBot(ctx, bob) {
+    ctx.fillStyle = '#57606f';
+    ctx.fillRect(-10, -10 + bob, 20, 16);
+    ctx.fillStyle = '#ff4757';
+    ctx.fillRect(-6, -6 + bob, 4, 4);
+    ctx.fillRect(2, -6 + bob, 4, 4);
+    ctx.fillStyle = '#a4b0be';
+    ctx.fillRect(-12, 6 + bob, 24, 4);
+  }
+
+  drawTheHaters(ctx, bob) {
+    ctx.fillStyle = '#2ed573';
+    ctx.fillRect(-16, -20 + bob, 32, 36);
+    ctx.fillStyle = '#2f3542';
+    ctx.fillRect(-12, -14 + bob, 24, 10);
+    ctx.fillStyle = '#ff4757';
+    ctx.fillRect(-8, -12 + bob, 4, 4);
+    ctx.fillRect(4, -12 + bob, 4, 4);
+    ctx.fillStyle = '#ffa502';
+    ctx.font = 'bold 9px "Press Start 2P", sans-serif';
+    ctx.fillText('👎', -8, 10 + bob);
+  }
+
+  drawFakeSubTrap(ctx, bob) {
+    ctx.save();
+    // Faintly blinking effect
+    ctx.globalAlpha = 0.6 + Math.sin(Date.now() * 0.008) * 0.35;
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(-14, -10 + bob, 28, 20);
+    ctx.fillStyle = '#ff4757';
+    ctx.beginPath();
+    ctx.moveTo(-4, -6 + bob);
+    ctx.lineTo(6, 0 + bob);
+    ctx.lineTo(-4, 6 + bob);
+    ctx.fill();
     ctx.restore();
   }
 

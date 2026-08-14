@@ -1,5 +1,5 @@
 // ============================================================================
-// Arab Gamers: The 20-Stage Pixel Campaign - Full UI, Shop, Modes & Achievements
+// Arab Gamers: The 20-Stage Pixel Campaign - Full UI, Shop, Studio, Modes & Assists
 // ============================================================================
 
 class UIManager {
@@ -14,6 +14,7 @@ class UIManager {
     this.campaignMapModal = document.getElementById('campaign-map-modal');
     this.loreModal = document.getElementById('lore-modal');
     this.shopModal = document.getElementById('shop-modal');
+    this.studioModal = document.getElementById('studio-modal');
     this.achievementsModal = document.getElementById('achievements-modal');
     this.modesModal = document.getElementById('modes-modal');
     this.weaponSelectModal = document.getElementById('weapon-select-modal');
@@ -25,6 +26,7 @@ class UIManager {
 
     this.initCampaignMapUI();
     this.initShopUI();
+    this.initStudioUI();
     this.initAchievementsUI();
     this.setupEventListeners();
   }
@@ -124,6 +126,52 @@ class UIManager {
             if (window.game) window.game.totalSubscribers -= res.cost;
             this.initShopUI();
             if (typeof window.alert === 'function') window.alert(`🎉 تم شراء: ${item.name} بنجاح!`);
+          } else {
+            if (typeof window.alert === 'function') window.alert(res.reason);
+          }
+        });
+      }
+
+      grid.appendChild(card);
+    }
+  }
+
+  initStudioUI() {
+    const grid = document.getElementById('studio-perks-grid');
+    if (!grid || !window.STUDIO_PERKS) return;
+
+    grid.innerHTML = '';
+    const totalSubs = window.game ? window.game.totalSubscribers : 1000;
+    const subsEl = document.getElementById('studio-subs-count');
+    if (subsEl) subsEl.textContent = totalSubs.toLocaleString();
+
+    for (const [key, perk] of Object.entries(window.STUDIO_PERKS)) {
+      const isOwned = window.studio ? window.studio.hasPerk(key) : false;
+      const card = document.createElement('div');
+      card.className = `studio-perk-card ${isOwned ? 'owned' : ''}`;
+      card.innerHTML = `
+        <div class="studio-perk-icon">${perk.icon}</div>
+        <div class="studio-perk-info">
+          <span class="studio-perk-name">${perk.name}</span>
+          <span class="studio-perk-desc">${perk.desc}</span>
+        </div>
+        <div class="studio-perk-action">
+          <span class="studio-perk-cost">👥 ${perk.cost.toLocaleString()}</span>
+          <button class="btn-retro ${isOwned ? 'btn-owned' : 'btn-buy'}" data-perk="${key}">
+            ${isOwned ? '✅ مؤثث' : 'تأثيث 🛋️'}
+          </button>
+        </div>
+      `;
+
+      const buyBtn = card.querySelector('button');
+      if (buyBtn && !isOwned) {
+        buyBtn.addEventListener('click', () => {
+          const currentSubs = window.game ? window.game.totalSubscribers : 0;
+          const res = window.studio.buyPerk(key, currentSubs);
+          if (res.success) {
+            if (window.game) window.game.totalSubscribers -= res.cost;
+            this.initStudioUI();
+            if (typeof window.alert === 'function') window.alert(`🛋️ تم تأثيث: ${perk.name} في غرفة البث بنجاح!`);
           } else {
             if (typeof window.alert === 'function') window.alert(res.reason);
           }
@@ -235,6 +283,25 @@ class UIManager {
     const btnCloseShop = document.getElementById('btn-close-shop');
     if (btnCloseShop) {
       btnCloseShop.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.showScreen('menu');
+      });
+    }
+
+    const btnOpenStudio = document.getElementById('btn-open-studio');
+    if (btnOpenStudio) {
+      btnOpenStudio.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
+        this.initStudioUI();
+        this.showScreen('studio');
+      });
+    }
+
+    const btnCloseStudio = document.getElementById('btn-close-studio');
+    if (btnCloseStudio) {
+      btnCloseStudio.addEventListener('click', (e) => {
         if (e && e.preventDefault) e.preventDefault();
         try { if (window.audio && window.audio.sfxMenuConfirm) window.audio.sfxMenuConfirm(); } catch(err){}
         this.showScreen('menu');
@@ -469,6 +536,7 @@ class UIManager {
     this.bindTouchButton('btn-touch-attack', (p) => { if (p && window.game) window.game.handleAttackPress(); });
     this.bindTouchButton('btn-touch-dash', (p) => { if (p && window.game) window.game.handleDashPress(); });
     this.bindTouchButton('btn-touch-special', (p) => { if (p && window.game) window.game.handleSpecialPress(); });
+    this.bindTouchButton('btn-touch-assist', (p) => { if (p && window.game) window.game.handleAssistPress(); });
     this.bindTouchButton('btn-touch-switch', (p) => {
       if (p && window.game) {
         this.selectedHeroIndex = (this.selectedHeroIndex + 1) % this.heroKeys.length;
@@ -499,6 +567,7 @@ class UIManager {
       else if (screenName === 'campaignMap') window.game.state = 'campaignMap';
       else if (screenName === 'weaponSelect') window.game.state = 'weaponSelect';
       else if (screenName === 'shop') window.game.state = 'shop';
+      else if (screenName === 'studio') window.game.state = 'studio';
       else if (screenName === 'achievements') window.game.state = 'achievements';
       else if (screenName === 'modes') window.game.state = 'modes';
       else if (screenName === 'lore') window.game.state = 'lore';
@@ -509,6 +578,7 @@ class UIManager {
     if (this.campaignMapModal) this.campaignMapModal.classList.toggle('hidden', screenName !== 'campaignMap');
     if (this.loreModal) this.loreModal.classList.toggle('hidden', screenName !== 'lore');
     if (this.shopModal) this.shopModal.classList.toggle('hidden', screenName !== 'shop');
+    if (this.studioModal) this.studioModal.classList.toggle('hidden', screenName !== 'studio');
     if (this.achievementsModal) this.achievementsModal.classList.toggle('hidden', screenName !== 'achievements');
     if (this.modesModal) this.modesModal.classList.toggle('hidden', screenName !== 'modes');
     if (this.weaponSelectModal) this.weaponSelectModal.classList.toggle('hidden', screenName !== 'weaponSelect');
@@ -548,6 +618,16 @@ class UIManager {
       energyFill.style.width = `${energyPct}%`;
       energyText.textContent = `${Math.floor(energyPct)}%`;
       energyFill.classList.toggle('ready', energyPct >= 100);
+    }
+
+    // Assist Cooldown Bar
+    const assistFill = document.getElementById('hud-assist-fill');
+    const assistText = document.getElementById('hud-assist-text');
+    if (assistFill && assistText && window.assists) {
+      const pct = window.assists.getCooldownPercent();
+      assistFill.style.width = `${pct}%`;
+      assistText.textContent = pct >= 100 ? 'جاهز!' : `${Math.floor(pct)}%`;
+      assistFill.classList.toggle('ready', pct >= 100);
     }
 
     // Subscriber Quota Progress HUD

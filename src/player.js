@@ -178,6 +178,17 @@ class Player {
       if (window.shop.hasUpgrade('skin_gold_armor')) this.defense += 15;
     }
 
+    // Apply Studio Builder Room Perks
+    if (window.studio) {
+      if (window.studio.hasPerk('gaming_chair')) {
+        this.maxHp = Math.round(this.maxHp * 1.2);
+        this.hp = this.maxHp;
+      }
+      if (window.studio.hasPerk('ambient_rgb')) {
+        this.speed *= 1.15;
+      }
+    }
+
     if (this.heroId === 'banderita') {
       this.selectedWeapon = weaponChoice || this.heroData.selectedWeapon || 'tamees';
     } else {
